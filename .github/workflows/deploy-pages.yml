@@ -32,7 +32,9 @@ jobs:
           cache-dependency-path: shopping/package-lock.json
 
       - name: Install dependencies
-        run: npm ci
+        # lockfile 是在 Windows 上生成的，缺少 Linux 平台的可选依赖（@emnapi/*），
+        # npm ci 会因 "in sync" 校验直接失败，所以这里用 npm install。
+        run: npm install --no-audit --no-fund
 
       - name: Build
         run: npm run build
