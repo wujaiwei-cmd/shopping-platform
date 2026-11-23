@@ -157,9 +157,9 @@ async function login() {
       
       // 强制刷新页面，确保状态正确
       if (data.data.user.isAdmin) {
-        window.location.href = "/admin";
+        router.push("/admin");
       } else {
-        window.location.href = "/home";
+        router.push("/home");
       }
     } else {
       // 登录失败：显示错误信息

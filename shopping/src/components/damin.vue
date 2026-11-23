@@ -7,9 +7,9 @@
         </div>
       </div>
       <nav class="main-nav">
-        <a href="/admin/order" class="nav-item">订单管理</a>
-        <a href="/admin/product" class="nav-item">商品管理</a>
-        <a href="/admin/user" class="nav-item">用户管理</a>
+        <a href="#" @click.prevent="router.push('/admin/order')" class="nav-item">订单管理</a>
+        <a href="#" @click.prevent="router.push('/admin/product')" class="nav-item">商品管理</a>
+        <a href="#" @click.prevent="router.push('/admin/user')" class="nav-item">用户管理</a>
         <a href="#" @click.prevent="activeTab = 'feedback'" class="nav-item" :class="{ active: activeTab === 'feedback' }">反馈管理</a>
       </nav>
       <div class="header-right">
@@ -166,16 +166,16 @@
 
     <!-- 移动端底部导航 -->
     <nav class="mobile-nav">
-      <a href="/admin/order" class="mobile-nav-item">
+      <a href="#" @click.prevent="router.push('/admin/order')" class="mobile-nav-item">
         <span>订单</span>
       </a>
-      <a href="/admin/product" class="mobile-nav-item">
+      <a href="#" @click.prevent="router.push('/admin/product')" class="mobile-nav-item">
         <span>商品</span>
       </a>
-      <a href="/admin/user" class="mobile-nav-item">
+      <a href="#" @click.prevent="router.push('/admin/user')" class="mobile-nav-item">
         <span>用户</span>
       </a>
-      <a href="/admin/feedback" class="mobile-nav-item">
+      <a href="#" @click.prevent="router.push('/admin/feedback')" class="mobile-nav-item">
         <span>反馈</span>
       </a></nav>
   </div>

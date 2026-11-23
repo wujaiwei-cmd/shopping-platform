@@ -665,7 +665,7 @@ onMounted(() => {
   const isAdminFlag = localStorage.getItem("isAdmin");
   if (isAdminFlag === "true") {
     console.log("检测到管理员登录，跳转到管理员后台");
-    window.location.href = "/admin";
+    router.push("/admin");
     return;
   }
   
