@@ -2174,6 +2174,18 @@ function formatReviewDate(dateStr) {
   .search-input-box {
     max-width: 100%;
   }
+
+  /* 手机上按钮被挤成竖排（"搜"/"索"），收紧内边距并禁止换行 */
+  .search-button {
+    flex: 0 0 auto;
+    padding: 11px 18px;
+    font-size: 14px;
+    white-space: nowrap;
+  }
+
+  .search-input {
+    min-width: 0;
+  }
   
   /* 主内容区域 */
   .content-area {
