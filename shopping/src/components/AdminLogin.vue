@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="admin-login-container">
     <div class="login-box">
       <h2>管理员登录</h2>
@@ -13,6 +13,9 @@
         </div>
         <button type="submit" class="login-btn">登录</button>
         <button type="button" class="back-btn" @click="goToUserLogin">返回普通用户登录</button>
+        <div class="demo-tip">
+          <p>演示管理员账号：<b>admin</b> / <b>admin123</b></p>
+        </div>
       </form>
     </div>
   </div>
@@ -140,5 +143,21 @@ function goToUserLogin() {
   background: #eee;
   border-color: #ccc;
   color: #333;
+}
+
+.demo-tip {
+  margin-top: 14px;
+  padding: 10px 12px;
+  background: #f6f8ff;
+  border: 1px dashed #c7d2fe;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.7;
+  color: #64748b;
+  text-align: center;
+}
+
+.demo-tip b {
+  color: #4f46e5;
 }
 </style>

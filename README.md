@@ -5,8 +5,14 @@
 📦 **源码仓库**：<https://github.com/wujaiwei-cmd/shopping-platform>
 🌐 **在线预览**：<https://wujaiwei-cmd.github.io/shopping-platform/>
 
-> 在线预览部署在 GitHub Pages，只包含前端静态页面。商品、购物车、订单等数据来自后端接口，
-> 需要在本机启动后端（见下文「快速启动」）才能真正跑通完整流程；后端已在各 Controller 上放开 CORS。
+> **在线预览现在可以直接点着用**：GitHub Pages 跑不了 Java 后端，所以前端内置了一层
+> 浏览器端演示后端（`shopping/src/api/demoBackend.ts`），用 localStorage 模拟全部接口，
+> 登录 / 购物车 / 下单 / 退款 / 收藏 / 地址 / 评价 / 反馈 / 管理端都能真跑一遍。
+>
+> - 普通用户：`demo` / `demo123`
+> - 管理员：`admin` / `admin123`（首页右上角「管理后台」进入）
+> - 数据只存在你自己的浏览器里；控制台执行 `__demoReset()` 可重置
+> - 想连本机真实后端：访问 `?demo=off`，或执行 `localStorage.demoMode = 'off'` 后刷新
 
 ---
 

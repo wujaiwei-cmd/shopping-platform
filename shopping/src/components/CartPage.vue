@@ -1,4 +1,4 @@
-﻿
+
 <template>
   <div class="cart-page">
     <header class="header">
@@ -256,14 +256,37 @@ async function loadCart() {
   }
 }
 
-function updateQuantity(item, delta) {
+async function updateQuantity(item, delta) {
   const newQty = item.quantity + delta;
   if (newQty < 1) return;
   if (item.stock && newQty > item.stock) {
     ElMessage.warning("库存不足");
     return;
   }
+  const previous = item.quantity;
   item.quantity = newQty;
+
+  // 数量要真正落到后端，否则结算时用的还是旧数量
+  const token = localStorage.getItem("token");
+  if (!token) return;
+  try {
+    const response = await fetch("http://localhost:8081/api/cart", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "x-auth-token": token
+      },
+      body: JSON.stringify({ goodsId: item.goodsId, quantity: newQty })
+    });
+    const data = await response.json();
+    if (data.code !== 200) {
+      item.quantity = previous;
+      ElMessage.warning(data.message || "数量更新失败");
+    }
+  } catch (error) {
+    console.error("更新购物车数量失败:", error);
+    item.quantity = previous;
+  }
 }
 
 async function removeItem(goodsId) {

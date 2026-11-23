@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <!-- 登录页面主容器 -->
   <div class="login-box">
     <!-- 登录卡片 -->
@@ -27,6 +27,12 @@
           placeholder="请输入密码"
           class="form-input"
         />
+      </div>
+
+      <!-- 在线演示账号：GitHub Pages 上没有真实后端，数据用浏览器本地模拟 -->
+      <div class="demo-tip">
+        <p>在线演示账号：<b>demo</b> / <b>demo123</b></p>
+        <p>也可以点「立即注册」新建账号，数据只保存在你自己的浏览器里</p>
       </div>
 
       <!-- 按钮组 -->
@@ -307,5 +313,21 @@ onMounted(() => {
 .admin-btn:hover {
   background: #667eea;
   color: #fff;
+}
+
+.demo-tip {
+  margin: 18px 0 4px;
+  padding: 10px 12px;
+  background: #f6f8ff;
+  border: 1px dashed #c7d2fe;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.7;
+  color: #64748b;
+  text-align: center;
+}
+
+.demo-tip b {
+  color: #4f46e5;
 }
 </style>

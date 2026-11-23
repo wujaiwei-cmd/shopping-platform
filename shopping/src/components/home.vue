@@ -27,6 +27,7 @@
         <a href="#" @click.prevent="goCart" class="nav-link">购物车</a>
         <a href="#" @click.prevent="goFav" class="nav-link">收藏夹</a>
         <a href="#" @click.prevent="goHelp" class="nav-link">帮助中心</a>
+        <a href="#" @click.prevent="goAdmin" class="nav-link">管理后台</a>
       </nav>
     </header>
 
@@ -81,7 +82,7 @@
     <!-- 主内容区域 -->
     <div class="content-area">
       <!-- 左侧分类侧边栏 -->
-      <aside class="side-bar">
+      <aside class="side-bar" @click="handleCategoryClick">
         <h3>分类</h3>
         <div class="cat-row">
           <span>电脑</span><span>/</span><span>办公</span><span>/</span><span>文具</span>
@@ -177,12 +178,15 @@
         <!-- 商品展示区域 -->
         <div class="goods-section">
           <div class="section-header">
-            <h3 class="section-title">热门商品</h3>
-            <a href="#" class="more-link">查看更多 ›</a>
+            <h3 class="section-title">{{ activeCategory ? `分类：${activeCategory}` : '热门商品' }}</h3>
+            <a href="#" class="more-link" v-if="activeCategory" @click.prevent="clearCategoryFilter">清除筛选 ×</a>
+            <a href="#" class="more-link" v-else>查看更多 ›</a>
           </div>
           <div class="goods-grid">
-            <div v-if="products.length === 0" class="empty-tip">暂无商品数据</div>
-            <div v-else class="product-card" v-for="product in products" :key="product.id">
+            <div v-if="displayedProducts.length === 0" class="empty-tip">
+              {{ activeCategory ? `「${activeCategory}」分类下暂无商品，换个分类看看吧` : '暂无商品数据' }}
+            </div>
+            <div v-else class="product-card" v-for="product in displayedProducts" :key="product.id">
               <div class="product-img-wrap" @click="showProductDetail(product)">
                 <img :src="product.image" :alt="product.name" class="product-img" />
                 <div v-if="product.stock < 10 && product.stock > 0" class="stock-tag">仅剩{{ product.stock }}件</div>
@@ -371,6 +375,31 @@ let autoPlayTimer = null;
 
 // 商品数据
 let products = ref([]);
+
+// 分类筛选（点击左侧「分类」里的任意文字即可筛选）
+let activeCategory = ref("");
+
+const displayedProducts = computed(() => {
+  if (!activeCategory.value) return products.value;
+  return products.value.filter(product => product.category === activeCategory.value);
+});
+
+function filterByCategory(name: string) {
+  activeCategory.value = activeCategory.value === name ? "" : name;
+}
+
+function clearCategoryFilter() {
+  activeCategory.value = "";
+}
+
+// 分类栏是纯文字，用事件代理统一处理点击
+function handleCategoryClick(event: MouseEvent) {
+  const target = event.target as HTMLElement | null;
+  if (!target || !target.closest(".cat-row")) return;
+  const name = (target.textContent || "").trim();
+  if (!name || name === "/") return;
+  filterByCategory(name);
+}
 
 // 搜索功能
 let searchKeyword = ref("");
@@ -737,6 +766,10 @@ function goHelp() {
   router.push("/help");
 }
 
+function goAdmin() {
+  router.push("/admin/login");
+}
+
 // 加入购物车
 async function addToCart(product: any) {
   if (!nowUser.value) {
@@ -1085,6 +1118,12 @@ function formatReviewDate(dateStr) {
 
 .cat-row span {
   margin: 0 3px;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.cat-row span:hover {
+  color: #ff4400;
 }
 
 /* 猜你喜欢区域 */
