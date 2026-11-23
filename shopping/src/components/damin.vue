@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="admin-page">
     <header class="admin-header">
       <div class="header-left">
@@ -603,13 +603,18 @@ async function createSubAdmin() {
 .bar-item {
   display: flex;
   flex-direction: column;
+  justify-content: flex-end;
   align-items: center;
   gap: 10px;
   width: 50px;
+  height: 100%;
 }
 
 .bar {
   width: 100%;
+  /* 柱高由内联 style 的百分比给出；父级需要确定高度，否则百分比塌成 0 */
+  max-height: calc(100% - 26px);
+  min-height: 2px;
   background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
   border-radius: 8px 8px 0 0;
   transition: height 0.5s;
