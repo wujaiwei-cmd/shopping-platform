@@ -51,7 +51,12 @@
             <span class="remove-btn" @click="removeItem(item.goodsId)">删除</span>
           </div>
         </div>
-        <el-empty v-else :image-size="100" :description="searchKeyword ? '没有找到匹配的商品' : '购物车是空的'" />
+        <div v-else class="cart-empty">
+          <div class="cart-empty-icon">🛒</div>
+          <p class="cart-empty-text">{{ searchKeyword ? '没有找到匹配的商品' : '购物车还是空的' }}</p>
+          <button v-if="!searchKeyword" class="cart-empty-btn" @click="goHome">去逛逛</button>
+          <button v-else class="cart-empty-btn" @click="searchKeyword = ''">清空搜索</button>
+        </div>
       </div>
 
       <div class="cart-footer">
@@ -172,7 +177,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from "vue";
 import { useRouter } from "vue-router";
-import { ElEmpty, ElMessage } from "element-plus";
+import { toast } from "../utils/toast";
 
 const router = useRouter();
 const cartItems = ref([]);
@@ -248,11 +253,11 @@ async function loadCart() {
         selected: false
       }));
     } else {
-      ElMessage.error(data.message || "加载失败");
+      toast.error(data.message || "加载失败");
     }
   } catch (error) {
     console.error("加载购物车失败:", error);
-    ElMessage.error("加载失败，请检查网络");
+    toast.error("加载失败，请检查网络");
   }
 }
 
@@ -260,7 +265,7 @@ async function updateQuantity(item, delta) {
   const newQty = item.quantity + delta;
   if (newQty < 1) return;
   if (item.stock && newQty > item.stock) {
-    ElMessage.warning("库存不足");
+    toast.warning("库存不足");
     return;
   }
   const previous = item.quantity;
@@ -281,7 +286,7 @@ async function updateQuantity(item, delta) {
     const data = await response.json();
     if (data.code !== 200) {
       item.quantity = previous;
-      ElMessage.warning(data.message || "数量更新失败");
+      toast.warning(data.message || "数量更新失败");
     }
   } catch (error) {
     console.error("更新购物车数量失败:", error);
@@ -303,14 +308,14 @@ async function removeItem(goodsId) {
     const data = await response.json();
     
     if (data.code === 200) {
-      ElMessage.success("删除成功");
+      toast.success("删除成功");
       loadCart();
     } else {
-      ElMessage.error(data.message || "删除失败");
+      toast.error(data.message || "删除失败");
     }
   } catch (error) {
     console.error("删除失败:", error);
-    ElMessage.error("删除失败，请检查网络");
+    toast.error("删除失败，请检查网络");
   }
 }
 
@@ -323,7 +328,7 @@ function toggleSelectAll() {
 function checkout() {
   const selectedItems = cartItems.value.filter(item => item.selected);
   if (selectedItems.length === 0) {
-    ElMessage.warning("请选择要结算的商品");
+    toast.warning("请选择要结算的商品");
     return;
   }
   
@@ -345,17 +350,17 @@ function closeSuccessModal() {
 
 async function processPayment() {
   if (addresses.value.length === 0) {
-    ElMessage.warning("请先添加收货地址");
+    toast.warning("请先添加收货地址");
     return;
   }
   
   const selectedAddr = addresses.value[selectedAddressIndex.value];
   if (!selectedAddr) {
-    ElMessage.warning("请选择收货地址");
+    toast.warning("请选择收货地址");
     return;
   }
 
-  ElMessage.info("正在处理支付...");
+  toast.info("正在处理支付...");
 
   await new Promise(resolve => setTimeout(resolve, 1500));
 
@@ -387,11 +392,11 @@ async function processPayment() {
       cartItems.value = [];
       loadCart();
     } else {
-      ElMessage.error(data.message || "支付失败");
+      toast.error(data.message || "支付失败");
     }
   } catch (error) {
     console.error("支付失败:", error);
-    ElMessage.error("支付失败，请检查网络");
+    toast.error("支付失败，请检查网络");
   }
 }
 
@@ -571,6 +576,44 @@ function goToProfile() {
   border-radius: 15px;
   min-height: 400px;
   padding: 20px;
+}
+
+.cart-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 70px 20px;
+  color: #999;
+}
+
+.cart-empty-icon {
+  font-size: 56px;
+  line-height: 1;
+  opacity: 0.65;
+}
+
+.cart-empty-text {
+  margin: 0;
+  font-size: 15px;
+  color: #888;
+}
+
+.cart-empty-btn {
+  padding: 8px 22px;
+  border: 1px solid #ff4400;
+  background: #fff;
+  color: #ff4400;
+  border-radius: 20px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cart-empty-btn:hover {
+  background: #ff4400;
+  color: #fff;
 }
 
 .cart-items {

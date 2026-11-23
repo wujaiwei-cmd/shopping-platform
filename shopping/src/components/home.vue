@@ -465,7 +465,7 @@ const asset = (path: string) => `${import.meta.env.BASE_URL.replace(/\/$/, "")}$
 
 // 轮播图配置
 const slides = ref([
-  { image: asset("/images/qnlss.png"), title: "千年老山参" },
+  { image: asset("/images/qnlss.webp"), title: "千年老山参" },
   { image: asset("/images/ysfwj.jpg"), title: "野生蜂王浆" },
   { image: asset("/images/rxhsw.jpg"), title: "人形何首乌" },
   { image: asset("/images/jpyw.jpg"), title: "极品燕窝" },
@@ -474,7 +474,7 @@ const slides = ref([
 
 // 侧边推荐数据
 const sideItems = ref([
-  { id: 1, name: "野生灵芝", price: "¥599", image: asset("/images/qnlss.png") },
+  { id: 1, name: "野生灵芝", price: "¥599", image: asset("/images/qnlss.webp") },
   { id: 2, name: "鹿茸片", price: "¥399", image: asset("/images/ysfwj.jpg") },
   { id: 3, name: "冬虫夏草", price: "¥899", image: asset("/images/rxhsw.jpg") },
   { id: 4, name: "铁皮石斛", price: "¥299", image: asset("/images/jpyw.jpg") },

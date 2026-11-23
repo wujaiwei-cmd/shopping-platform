@@ -8,7 +8,7 @@
 - **框架**: Vue 3.5.32 (Composition API)
 - **语言**: TypeScript
 - **路由**: Vue Router 5.0.4
-- **UI组件库**: Element Plus 2.13.7
+- **UI组件库**: Element Plus 2.13.7（仅购物车用到 message/empty；为了首屏少下载 1MB+，已换成自写的轻量 toast 与空状态）
 - **构建工具**: Vite 8.0.4
 
 ### 后端技术

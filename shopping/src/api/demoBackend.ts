@@ -95,15 +95,15 @@ const toNumber = (value: any, fallback = 0): number => {
 
 function seedDb(): DemoDb {
   const goodsSeed = [
-    { name: '千年老山参', price: 1299, stock: 25, category: '健康', image: 'qnlss.png', description: '长白山野生人参，足年足龄，整支礼盒装，适合滋补送礼。' },
+    { name: '千年老山参', price: 1299, stock: 25, category: '健康', image: 'qnlss.webp', description: '长白山野生人参，足年足龄，整支礼盒装，适合滋补送礼。' },
     { name: '野生蜂王浆', price: 399, stock: 60, category: '健康', image: 'ysfwj.jpg', description: '高山百花蜜源，新鲜冷冻蜂王浆，每日一勺，元气满满。' },
     { name: '人形何首乌', price: 899, stock: 12, category: '健康', image: 'rxhsw.jpg', description: '仿野生种植何首乌，块根饱满，配黄酒蒸制更佳。' },
     { name: '极品燕窝', price: 1580, stock: 18, category: '食品', image: 'jpyw.jpg', description: '印尼雨季头期盏，盏形完整、少毛少杂，炖煮后口感顺滑。' },
     { name: '九天贡胶', price: 699, stock: 35, category: '健康', image: 'jtgj.jpg', description: '古法九提九炙，胶质浓稠，切块即食，女性滋补常备。' },
-    { name: '长白山鲜参礼盒', price: 899, stock: 20, category: '食品', image: 'qnlss.png', description: '鲜参带土直发，附赠礼盒与食用说明，节日送礼体面。' },
+    { name: '长白山鲜参礼盒', price: 899, stock: 20, category: '食品', image: 'qnlss.webp', description: '鲜参带土直发，附赠礼盒与食用说明，节日送礼体面。' },
     { name: '高原蜂巢蜜', price: 199, stock: 88, category: '食品', image: 'ysfwj.jpg', description: '整块蜂巢，含天然蜂蜡，直接嚼食，甜而不腻。' },
     { name: '何首乌洗发皂', price: 79, stock: 150, category: '美妆', image: 'rxhsw.jpg', description: '冷制手工皂，添加何首乌提取物，温和清洁，养护发根。' },
-    { name: '参茸养生礼盒', price: 2399, stock: 8, category: '健康', image: 'qnlss.png', description: '人参 + 鹿茸 + 枸杞组合装，商务送礼首选。' },
+    { name: '参茸养生礼盒', price: 2399, stock: 8, category: '健康', image: 'qnlss.webp', description: '人参 + 鹿茸 + 枸杞组合装，商务送礼首选。' },
     { name: '阿胶固元膏', price: 259, stock: 66, category: '食品', image: 'jtgj.jpg', description: '阿胶配伍核桃黑芝麻，切片即食，办公室下午茶。' },
     { name: '燕窝保湿面膜', price: 129, stock: 120, category: '美妆', image: 'jpyw.jpg', description: '燕窝提取物 + 玻尿酸，补水保湿，贴合不闷痘。' },
     { name: '养生炖盅', price: 159, stock: 45, category: '家居', image: 'jtgj.jpg', description: '陶瓷隔水炖盅，一人食容量，炖燕窝炖银耳都合适。' },
@@ -290,10 +290,14 @@ function seedDb(): DemoDb {
 let memoryDb: DemoDb | null = null
 
 function normalizeImagePaths(db: DemoDb): void {
+  // 早期版本存的是 qnlss.png，后来换成了体积小得多的 webp，这里做个兼容
+  const legacy: Record<string, string> = { 'qnlss.png': 'qnlss.webp' }
   const fix = (row: AnyRecord) => {
     const image = String(row.image || '')
     const matched = /\/images\/([^/]+)$/.exec(image)
-    if (matched) row.image = imageUrl(matched[1])
+    if (!matched) return
+    const file = legacy[matched[1]] || matched[1]
+    row.image = imageUrl(file)
   }
   db.goods.forEach(fix)
   db.orderItems.forEach(fix)
