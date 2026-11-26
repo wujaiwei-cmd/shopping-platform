@@ -38,8 +38,12 @@
         </div>
       </div>
       <div class="publish-hint" v-if="!hasToken">
-        没 Token 也能发布：点「发布到线上」→ 自动复制商品 JSON 并打开 GitHub 编辑页 →
-        全选粘贴后点 Commit，约 1 分钟后所有访客可见。
+        <b>发布三步：</b>
+        ① 点「发布到线上」——自动复制商品 JSON，并打开 GitHub 上的
+        <code>shopping/public/products.json</code> 编辑页（浏览器里要先登录 GitHub）；
+        ② 在编辑页<strong>全选</strong>（Ctrl/Cmd + A）→ <strong>粘贴</strong>（覆盖原内容）→ 点
+        <strong>Commit changes</strong> 提交；
+        ③ 等 1 分钟左右，点「检查是否生效」确认线上已经是这份商品。
       </div>
       <div class="section-title">商品列表</div>
       
@@ -152,7 +156,7 @@
 import { ref, reactive, computed, onMounted } from "vue";
 import { confirmSafe } from "../utils/dialog";
 import { useRouter } from "vue-router";
-import { buildDoc, getToken, githubEditUrl, loadPublishedDoc, publishToRepo, setToken } from "../api/catalog";
+import { buildDoc, getToken, githubEditUrl, inspectPublished, loadPublishedDoc, publishToRepo, setToken } from "../api/catalog";
 import { toast } from "../utils/toast";
 
 const router = useRouter();
@@ -388,16 +392,27 @@ async function waitUntilLive(expectedCount: number, previousUpdatedAt: string) {
 
 /** 手动检查一次 */
 async function checkLive() {
-  const doc = await loadPublishedDoc();
-  if (!doc) {
-    toast.error("读取线上商品目录失败");
+  const result = await inspectPublished();
+
+  if (!result.ok) {
+    toast.error("读取线上文件失败：" + (result.error || "未知原因"));
     return;
   }
-  publishedCount.value = doc.items.length;
-  publishedAt.value = doc.updatedAt || "";
-  const same = doc.items.length === products.value.length;
-  if (same) toast.success("线上已是 " + doc.items.length + " 件商品，和本地一致");
-  else toast.warning("线上 " + doc.items.length + " 件 / 本地 " + products.value.length + " 件，可能还没提交或还在构建");
+
+  publishedCount.value = result.items.length;
+  publishedAt.value = result.updatedAt || "";
+
+  if (result.items.length === 0) {
+    toast.warning("线上还是空目录：可能还没提交，或提交后还在构建（约 1 分钟）");
+    return;
+  }
+  if (result.items.length === products.value.length) {
+    toast.success("线上已是 " + result.items.length + " 件商品，和本地一致");
+  } else {
+    toast.warning(
+      "线上 " + result.items.length + " 件 / 本地 " + products.value.length + " 件，可能还没提交或还在构建",
+    );
+  }
 }
 
 async function publishNow() {
@@ -651,6 +666,13 @@ onMounted(async () => {
   color: #8a6d3b;
   font-size: 12px;
   line-height: 1.7;
+}
+
+.publish-hint code {
+  background: rgba(0, 0, 0, 0.06);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 11px;
 }
 
 .publish-actions {

@@ -74,7 +74,40 @@ export async function loadPublishedDoc(): Promise<PublishedDoc | null> {
 
 export async function loadPublishedGoods(): Promise<any[] | null> {
   const doc = await loadPublishedDoc()
+
   return doc ? doc.items : null
+}
+
+/**
+ * 检查线上文件的状态：能读到、是不是合法 JSON、里面有几件商品。
+ * 用来在「检查是否生效」时给出更具体的原因（文件没更新 / JSON 写坏了 / 还没构建）。
+ */
+export async function inspectPublished(): Promise<{
+  ok: boolean
+  items: any[]
+  updatedAt: string
+  error?: string
+}> {
+  try {
+    const base = import.meta.env.BASE_URL || '/'
+    const res = await fetch(`${base}products.json?t=${Date.now()}`, { cache: 'no-store' })
+    if (!res.ok) return { ok: false, items: [], updatedAt: '', error: `HTTP ${res.status}` }
+
+    const text = await res.text()
+    try {
+      const data = JSON.parse(text)
+      if (Array.isArray(data)) return { ok: true, items: data, updatedAt: '' }
+      return {
+        ok: true,
+        items: Array.isArray(data?.items) ? data.items : [],
+        updatedAt: typeof data?.updatedAt === 'string' ? data.updatedAt : '',
+      }
+    } catch {
+      return { ok: false, items: [], updatedAt: '', error: '文件不是合法 JSON（可能没全选替换就被提交了）' }
+    }
+  } catch (error: any) {
+    return { ok: false, items: [], updatedAt: '', error: error?.message || '网络错误' }
+  }
 }
 
 /* ------------------------------------------------------------------ */
