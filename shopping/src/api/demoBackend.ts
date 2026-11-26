@@ -17,7 +17,7 @@
  * 关掉它，请求就会照常发到 http://localhost:8081。
  */
 
-const DB_KEY = 'shopping_demo_db_v2'
+const DB_KEY = 'shopping_demo_db_v3'
 const TOKEN_PREFIX = 'demo-token'
 const BASE = import.meta.env.BASE_URL || '/'
 
@@ -94,24 +94,11 @@ const toNumber = (value: any, fallback = 0): number => {
 /* ------------------------------------------------------------------ */
 
 function seedDb(): DemoDb {
-  const goodsSeed = [
-    { name: '千年老山参', price: 1299, stock: 25, category: '健康', image: 'qnlss.webp', description: '长白山野生人参，足年足龄，整支礼盒装，适合滋补送礼。' },
-    { name: '野生蜂王浆', price: 399, stock: 60, category: '健康', image: 'ysfwj.jpg', description: '高山百花蜜源，新鲜冷冻蜂王浆，每日一勺，元气满满。' },
-    { name: '人形何首乌', price: 899, stock: 12, category: '健康', image: 'rxhsw.jpg', description: '仿野生种植何首乌，块根饱满，配黄酒蒸制更佳。' },
-    { name: '极品燕窝', price: 1580, stock: 18, category: '食品', image: 'jpyw.jpg', description: '印尼雨季头期盏，盏形完整、少毛少杂，炖煮后口感顺滑。' },
-    { name: '九天贡胶', price: 699, stock: 35, category: '健康', image: 'jtgj.jpg', description: '古法九提九炙，胶质浓稠，切块即食，女性滋补常备。' },
-    { name: '长白山鲜参礼盒', price: 899, stock: 20, category: '食品', image: 'qnlss.webp', description: '鲜参带土直发，附赠礼盒与食用说明，节日送礼体面。' },
-    { name: '高原蜂巢蜜', price: 199, stock: 88, category: '食品', image: 'ysfwj.jpg', description: '整块蜂巢，含天然蜂蜡，直接嚼食，甜而不腻。' },
-    { name: '何首乌洗发皂', price: 79, stock: 150, category: '美妆', image: 'rxhsw.jpg', description: '冷制手工皂，添加何首乌提取物，温和清洁，养护发根。' },
-    { name: '参茸养生礼盒', price: 2399, stock: 8, category: '健康', image: 'qnlss.webp', description: '人参 + 鹿茸 + 枸杞组合装，商务送礼首选。' },
-    { name: '阿胶固元膏', price: 259, stock: 66, category: '食品', image: 'jtgj.jpg', description: '阿胶配伍核桃黑芝麻，切片即食，办公室下午茶。' },
-    { name: '燕窝保湿面膜', price: 129, stock: 120, category: '美妆', image: 'jpyw.jpg', description: '燕窝提取物 + 玻尿酸，补水保湿，贴合不闷痘。' },
-    { name: '养生炖盅', price: 159, stock: 45, category: '家居', image: 'jtgj.jpg', description: '陶瓷隔水炖盅，一人食容量，炖燕窝炖银耳都合适。' },
-  ]
-
+  // 这里刻意不带任何商品：商品只能由管理员在「商品管理」里添加，
+  // 加完之后首页 / 购物车 / 订单里才会出现对应的数据。
   const db: DemoDb = {
     base: BASE,
-    seq: { user: 2, goods: goodsSeed.length, cart: 0, order: 0, orderItem: 0, favorite: 2, address: 1, review: 2, feedback: 2 },
+    seq: { user: 2, goods: 0, cart: 0, order: 0, orderItem: 0, favorite: 0, address: 1, review: 0, feedback: 2 },
     users: [
       {
         id: 1,
@@ -136,26 +123,11 @@ function seedDb(): DemoDb {
         createdAt: ago(30 * DAY),
       },
     ],
-    goods: goodsSeed.map((item, index) => ({
-      id: index + 1,
-      name: item.name,
-      price: item.price,
-      stock: item.stock,
-      category: item.category,
-      description: item.description,
-      image: imageUrl(item.image),
-      status: 'active',
-      sales: 12 + index * 7,
-      createdAt: ago((20 - index) * DAY),
-      updatedAt: null,
-    })),
+    goods: [],
     carts: [],
     orders: [],
     orderItems: [],
-    favorites: [
-      { id: 1, userId: 2, goodsId: 1, createdAt: ago(6 * DAY) },
-      { id: 2, userId: 2, goodsId: 5, createdAt: ago(3 * DAY) },
-    ],
+    favorites: [],
     addresses: [
       {
         id: 1,
@@ -171,34 +143,7 @@ function seedDb(): DemoDb {
         updatedAt: null,
       },
     ],
-    reviews: [
-      {
-        id: 1,
-        reviewId: 1,
-        productId: 1,
-        customerId: 2,
-        customerName: 'de**',
-        starCount: 5,
-        rating: 5,
-        reviewText: '参形完整，泡酒很合适，家里老人很满意。',
-        content: '参形完整，泡酒很合适，家里老人很满意。',
-        submittedAt: ago(5 * DAY),
-        createdAt: ago(5 * DAY),
-      },
-      {
-        id: 2,
-        reviewId: 2,
-        productId: 1,
-        customerId: 2,
-        customerName: '小**',
-        starCount: 4,
-        rating: 4,
-        reviewText: '包装很用心，就是快递稍微慢了一点。',
-        content: '包装很用心，就是快递稍微慢了一点。',
-        submittedAt: ago(2 * DAY),
-        createdAt: ago(2 * DAY),
-      },
-    ],
+    reviews: [],
     feedbacks: [
       {
         id: 1,
@@ -228,57 +173,6 @@ function seedDb(): DemoDb {
       },
     ],
   }
-
-  // 预置几笔订单，让「我的订单」和管理端「数据概览」打开就有内容
-  const seedOrder = (opts: {
-    status: string
-    paymentMethod: string
-    goodsIndex: number
-    quantity: number
-    createdAt: string
-    refundStatus?: string | null
-  }) => {
-    const goods = db.goods[opts.goodsIndex]
-    const orderId = nextId(db, 'order')
-    const totalAmount = Number((goods.price * opts.quantity).toFixed(2))
-    const order = {
-      id: orderId,
-      userId: 2,
-      orderNo: `ORD${opts.createdAt.replace(/\D/g, '').slice(0, 14)}${String(1000 + orderId)}`,
-      totalAmount,
-      status: opts.status,
-      shippingName: '张三',
-      shippingPhone: '13900139000',
-      shippingAddress: '浙江省 杭州市 西湖区 文三路 100 号 3 幢 501 室',
-      paymentMethod: opts.paymentMethod,
-      createdAt: opts.createdAt,
-      updatedAt: opts.createdAt,
-      refundStatus: opts.refundStatus ?? null,
-      refundReason: null,
-      refundRequestedAt: null,
-      refundProcessedAt: null,
-      refundNote: null,
-    }
-    db.orders.push(order)
-
-    const itemId = nextId(db, 'orderItem')
-    db.orderItems.push({
-      id: itemId,
-      orderId,
-      goodsId: goods.id,
-      goodsName: goods.name,
-      price: goods.price,
-      quantity: opts.quantity,
-      image: goods.image,
-      description: goods.description,
-      categoryName: goods.category,
-      createdAt: opts.createdAt,
-    })
-  }
-
-  seedOrder({ status: 'paid', paymentMethod: 'wechat', goodsIndex: 1, quantity: 1, createdAt: ago(2 * HOUR) })
-  seedOrder({ status: 'shipped', paymentMethod: 'alipay', goodsIndex: 0, quantity: 1, createdAt: ago(2 * DAY) })
-  seedOrder({ status: 'completed', paymentMethod: 'wechat', goodsIndex: 3, quantity: 2, createdAt: ago(6 * DAY) })
 
   return db
 }

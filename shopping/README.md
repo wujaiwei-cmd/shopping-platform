@@ -43,8 +43,9 @@ GitHub Pages 只能托管静态文件，跑不了 Spring Boot + MySQL。为了�
 前端内置了一层浏览器端演示后端：`src/api/demoBackend.ts`。
 
 - 拦截发往 `http://localhost:8081/api/*` 的请求，在浏览器里完成全部业务逻辑
-- 数据存在 `localStorage`（键名 `shopping_demo_db_v2`），每个浏览器一份，刷新不丢
+- 数据存在 `localStorage`（键名 `shopping_demo_db_v3`），每个浏览器一份，刷新不丢
 - 接口路径 / 请求参数 / 返回字段与 `backend/` 里的 Controller 一一对应
+- **初始没有任何商品**，商品只能由管理员在「商品管理」里添加
 
 ### 演示账号
 
@@ -54,6 +55,11 @@ GitHub Pages 只能托管静态文件，跑不了 Spring Boot + MySQL。为了�
 | 管理员 | `admin` | `admin123` | 首页右上角「管理后台」或 `/admin/login` |
 
 登录页也可以点「立即注册」新建账号。
+
+> 第一次打开线上站点时，首页会显示「店铺里还没有商品」。
+> 用 `admin / admin123` 进入「管理后台 → 商品管理 → 添加商品」，
+> 填好名称 / 价格 / 库存 / 分类保存后，首页的「热门商品」「今日特惠」就会立刻出现这件商品，
+> 普通用户才能加购物车、下单、评价。
 
 ### 在线可以走通的流程
 

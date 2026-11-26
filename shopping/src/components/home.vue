@@ -162,8 +162,8 @@
             </div>
           </div>
           
-          <!-- 今日特惠 -->
-          <div class="daily-deal">
+          <!-- 今日特惠（只有商家上架了商品才显示） -->
+          <div class="daily-deal" v-if="sideItems.length > 0">
             <h4>今日特惠</h4>
             <div class="deal-item" v-for="item in sideItems" :key="item.id">
               <img :src="item.image" :alt="item.name" />
@@ -184,7 +184,14 @@
           </div>
           <div class="goods-grid">
             <div v-if="displayedProducts.length === 0" class="empty-tip">
-              {{ activeCategory ? `「${activeCategory}」分类下暂无商品，换个分类看看吧` : '暂无商品数据' }}
+              <template v-if="activeCategory">
+                「{{ activeCategory }}」分类下暂无商品，换个分类看看吧
+              </template>
+              <template v-else>
+                <p class="empty-title">店铺里还没有商品</p>
+                <p class="empty-sub">管理员登录后到「商品管理」添加，上架的商品会立刻显示在这里</p>
+                <button class="empty-action" @click="goAdmin">去添加商品</button>
+              </template>
             </div>
             <div v-else class="product-card" v-for="product in displayedProducts" :key="product.id">
               <div class="product-img-wrap" @click="showProductDetail(product)">
@@ -463,22 +470,24 @@ let topCategoryProducts = ref([]);
 // 静态资源路径：跟随部署基路径（支持部署在子目录，如 GitHub Pages）
 const asset = (path: string) => `${import.meta.env.BASE_URL.replace(/\/$/, "")}${path}`;
 
-// 轮播图配置
+// 轮播图：只做品牌氛围，不绑定具体商品（商品由商家在后台添加）
 const slides = ref([
-  { image: asset("/images/qnlss.webp"), title: "千年老山参" },
-  { image: asset("/images/ysfwj.jpg"), title: "野生蜂王浆" },
-  { image: asset("/images/rxhsw.jpg"), title: "人形何首乌" },
-  { image: asset("/images/jpyw.jpg"), title: "极品燕窝" },
-  { image: asset("/images/jtgj.jpg"), title: "九天贡胶" },
+  { image: asset("/images/qnlss.webp"), title: "精选好物 · 产地直供" },
+  { image: asset("/images/ysfwj.jpg"), title: "每日新鲜 · 顺丰直达" },
+  { image: asset("/images/rxhsw.jpg"), title: "品质严选 · 假一赔十" },
+  { image: asset("/images/jpyw.jpg"), title: "礼盒包装 · 送礼体面" },
+  { image: asset("/images/jtgj.jpg"), title: "限时特惠 · 满减进行中" },
 ]);
 
-// 侧边推荐数据
-const sideItems = ref([
-  { id: 1, name: "野生灵芝", price: "¥599", image: asset("/images/qnlss.webp") },
-  { id: 2, name: "鹿茸片", price: "¥399", image: asset("/images/ysfwj.jpg") },
-  { id: 3, name: "冬虫夏草", price: "¥899", image: asset("/images/rxhsw.jpg") },
-  { id: 4, name: "铁皮石斛", price: "¥299", image: asset("/images/jpyw.jpg") },
-]);
+// 侧边「今日特惠」：直接取商家上架的商品，没有商品就不显示这一栏
+const sideItems = computed(() =>
+  products.value.slice(0, 4).map((product: any) => ({
+    id: product.id,
+    name: product.name,
+    price: `¥${Number(product.price || 0).toFixed(2)}`,
+    image: product.image,
+  }))
+);
 
 // 加载商品列表
 async function loadProducts() {
@@ -661,14 +670,9 @@ onMounted(() => {
     isAdmin: localStorage.getItem("isAdmin")
   });
   
-  // 检查是否是管理员登录，如果是管理员，跳转到管理员后台
-  const isAdminFlag = localStorage.getItem("isAdmin");
-  if (isAdminFlag === "true") {
-    console.log("检测到管理员登录，跳转到管理员后台");
-    router.push("/admin");
-    return;
-  }
-  
+  // 管理员也可以浏览前台（加完商品想看看上架效果时不被弹回控制台）
+  // 登录页仍然会把管理员直接引导到 /admin
+
   // 先清除旧的商品缓存，确保总是从后端获取最新数据
   localStorage.removeItem("products");
   
@@ -1235,12 +1239,15 @@ function formatReviewDate(dateStr) {
 .banner-row {
   display: flex;
   justify-content: space-between;
+  gap: 20px;
 }
 
 /* 轮播图区域 */
 .banner {
   background: rgba(255,255,255,0.95);
-  width: 1200px;
+  flex: 1;
+  min-width: 0;
+  width: auto;
   height: 400px;
   border-radius: 15px;
   margin-bottom: 25px;
@@ -1504,6 +1511,35 @@ function formatReviewDate(dateStr) {
   color: #999;
   font-size: 14px;
   padding: 80px 0;
+}
+
+.empty-title {
+  margin: 0 0 8px;
+  font-size: 17px;
+  color: #666;
+  font-weight: 600;
+}
+
+.empty-sub {
+  margin: 0 0 20px;
+  font-size: 13px;
+  color: #999;
+}
+
+.empty-action {
+  padding: 9px 26px;
+  border: 1px solid #ff4400;
+  background: #fff;
+  color: #ff4400;
+  border-radius: 22px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.empty-action:hover {
+  background: #ff4400;
+  color: #fff;
 }
 
 /* 商品卡片 */
