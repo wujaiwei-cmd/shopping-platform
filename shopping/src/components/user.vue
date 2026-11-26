@@ -93,6 +93,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
+import { confirmSafe } from "../utils/dialog";
 import { useRouter } from "vue-router";
 
 const router = useRouter();
@@ -182,7 +183,7 @@ async function toggleUser(user: User) {
 }
 
 async function deleteUser(userId: number | string) {
-  if (!confirm(`确定要删除用户吗？此操作不可恢复。`)) {
+  if (!confirmSafe(`确定要删除用户吗？此操作不可恢复。`)) {
     return;
   }
   

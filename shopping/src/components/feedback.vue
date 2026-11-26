@@ -106,6 +106,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
+import { confirmSafe } from "../utils/dialog";
 import { useRouter } from "vue-router";
 
 const router = useRouter();
@@ -173,7 +174,7 @@ const processFeedback = async (id: number) => {
 };
 
 const deleteFeedback = async (id: number) => {
-  if (!confirm('确定要删除这条反馈吗？')) return;
+  if (!confirmSafe('确定要删除这条反馈吗？')) return;
 
   try {
     const token = localStorage.getItem('token');

@@ -148,6 +148,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from "vue";
+import { confirmSafe } from "../utils/dialog";
 import { useRouter } from "vue-router";
 import { buildDoc, getToken, githubEditUrl, loadPublishedGoods, publishToRepo, setToken } from "../api/catalog";
 
@@ -307,7 +308,7 @@ async function saveProduct() {
 
 // 删除商品
 async function deleteProduct(id: number) {
-  if (!confirm("确定要删除这个商品吗？")) {
+  if (!confirmSafe("确定要删除这个商品吗？")) {
     return;
   }
 
@@ -374,7 +375,7 @@ async function publishNow() {
     copyJson();
     return;
   }
-  if (!confirm("把当前 " + products.value.length + " 件商品发布到线上？提交后约 1 分钟所有访客可见")) return;
+  if (!confirmSafe("把当前 " + products.value.length + " 件商品发布到线上？提交后约 1 分钟所有访客可见")) return;
 
   const result = await publishToRepo(products.value);
   alert(result.message);

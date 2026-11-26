@@ -219,6 +219,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from "vue";
+import { confirmSafe } from "../utils/dialog";
 import { useRouter } from "vue-router";
 
 const router = useRouter();
@@ -323,7 +324,7 @@ function getRefundStatusText(status: string) {
 
 async function processRefund(orderId: number, approved: boolean) {
   const action = approved ? '通过' : '拒绝';
-  if (!confirm(`确定要${action}该退款申请吗？`)) {
+  if (!confirmSafe(`确定要${action}该退款申请吗？`)) {
     return;
   }
   const token = localStorage.getItem("token");
@@ -406,7 +407,7 @@ function closeDetailModal() {
 }
 
 async function deleteOrder(orderId: number) {
-  if (!confirm("确定要删除该订单吗？此操作不可恢复！")) {
+  if (!confirmSafe("确定要删除该订单吗？此操作不可恢复！")) {
     return;
   }
   const token = localStorage.getItem("token");

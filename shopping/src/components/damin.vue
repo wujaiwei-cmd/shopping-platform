@@ -183,6 +183,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, computed } from "vue";
+import { confirmSafe } from "../utils/dialog";
 import { useRouter } from "vue-router";
 
 const router = useRouter();
@@ -327,7 +328,7 @@ async function processFeedback(item: any) {
 }
 
 async function deleteFeedback(id: number) {
-  if (!confirm("确定要删除这条反馈吗？")) return;
+  if (!confirmSafe("确定要删除这条反馈吗？")) return;
   
   const token = localStorage.getItem("token");
   try {
@@ -357,7 +358,7 @@ function goToFeedback() {
 }
 
 function handleLogout() {
-  if (confirm("确定要退出系统吗？")) {
+  if (confirmSafe("确定要退出系统吗？")) {
     localStorage.removeItem("loginUser");
     localStorage.removeItem("token");
     localStorage.removeItem("isAdmin");

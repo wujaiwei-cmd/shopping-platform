@@ -176,6 +176,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from "vue";
+import { confirmSafe } from "../utils/dialog";
 import { useRouter } from "vue-router";
 import { toast } from "../utils/toast";
 
@@ -295,7 +296,7 @@ async function updateQuantity(item, delta) {
 }
 
 async function removeItem(goodsId) {
-  if (!confirm("确定要删除这个商品吗？")) return;
+  if (!confirmSafe("确定要删除这个商品吗？")) return;
 
   const token = localStorage.getItem("token");
   try {

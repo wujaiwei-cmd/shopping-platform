@@ -351,6 +351,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
+import { confirmSafe } from "../utils/dialog";
 import { useRouter } from "vue-router";
 
 const router = useRouter();
@@ -808,7 +809,7 @@ function editAddress(index: number) {
 }
 
 async function deleteAddress(index: number) {
-  if (confirm("确定要删除这个地址吗？")) {
+  if (confirmSafe("确定要删除这个地址吗？")) {
     const addr = addresses.value[index];
     try {
       const token = localStorage.getItem('token');
@@ -962,7 +963,7 @@ function getOrderStatusText(status: string) {
 }
 
 async function confirmReceive(orderId: number) {
-  if (!confirm("确定要确认收货吗？")) {
+  if (!confirmSafe("确定要确认收货吗？")) {
     return;
   }
   const token = localStorage.getItem("token");
@@ -1055,7 +1056,7 @@ function openOrderModal() {
 
 
 async function confirmDeleteAccount() {
-  if (!confirm("⚠️ 警告：注销账号后将无法恢复，所有数据将被删除。确定要注销此账号吗？")) {
+  if (!confirmSafe("⚠️ 警告：注销账号后将无法恢复，所有数据将被删除。确定要注销此账号吗？")) {
     return;
   }
   

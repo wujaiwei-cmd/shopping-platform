@@ -63,6 +63,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from "vue";
+import { confirmSafe } from "../utils/dialog";
 import { useRouter } from "vue-router";
 
 const router = useRouter();
@@ -119,7 +120,7 @@ async function loadFavorites() {
 }
 
 async function removeFavorite(product) {
-  if (!confirm("确定要取消收藏该商品吗？")) return;
+  if (!confirmSafe("确定要取消收藏该商品吗？")) return;
 
   const token = localStorage.getItem("token");
   try {

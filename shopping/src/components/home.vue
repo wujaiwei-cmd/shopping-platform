@@ -372,7 +372,9 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from "vue";
+import { confirmSafe } from "../utils/dialog";
 import { useRouter } from "vue-router";
+import { toast } from "../utils/toast";
 
 const router = useRouter();
 
@@ -744,9 +746,9 @@ function handleLogin() {
 }
 
 function changeUser() {
-  if (!confirm("确定要切换用户吗？")) return;
   showOpts.value = false;
   clearLogin();
+  toast.info("已退出当前账号，请重新登录");
   router.push("/login");
 }
 
@@ -759,11 +761,9 @@ function clearLogin() {
 
 function quitLogin() {
   showOpts.value = false;
-  if (confirm("确定要退出登录吗？")) {
-    clearLogin();
-    alert("已退出登录");
-    router.push("/login");
-  }
+  clearLogin();
+  toast.success("已退出登录");
+  router.push("/login");
 }
 
 // 页面跳转
@@ -791,7 +791,7 @@ async function addToCart(product: any) {
   }
   
   // 确认加入购物车
-  const confirmed = confirm(`确认要将"${product.name}"加入购物车吗？`);
+  const confirmed = confirmSafe(`确认要将"${product.name}"加入购物车吗？`);
   if (!confirmed) {
     return;
   }
