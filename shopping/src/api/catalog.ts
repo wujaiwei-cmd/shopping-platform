@@ -49,19 +49,32 @@ export function githubFileUrl(): string {
 /* 读取已发布的商品                                                    */
 /* ------------------------------------------------------------------ */
 
-export async function loadPublishedGoods(): Promise<any[] | null> {
+export interface PublishedDoc {
+  items: any[]
+  updatedAt: string
+}
+
+/** 读取线上商品文档（商品 + 更新时间） */
+export async function loadPublishedDoc(): Promise<PublishedDoc | null> {
   try {
     const base = import.meta.env.BASE_URL || '/'
     const res = await fetch(`${base}products.json?t=${Date.now()}`, { cache: 'no-store' })
     if (!res.ok) return null
     const data = await res.json()
-    if (Array.isArray(data)) return data
-    if (data && Array.isArray(data.items)) return data.items
-    return []
+    if (Array.isArray(data)) return { items: data, updatedAt: '' }
+    return {
+      items: Array.isArray(data?.items) ? data.items : [],
+      updatedAt: typeof data?.updatedAt === 'string' ? data.updatedAt : '',
+    }
   } catch (error) {
     console.warn('[catalog] 读取线上商品目录失败：', error)
     return null
   }
+}
+
+export async function loadPublishedGoods(): Promise<any[] | null> {
+  const doc = await loadPublishedDoc()
+  return doc ? doc.items : null
 }
 
 /* ------------------------------------------------------------------ */

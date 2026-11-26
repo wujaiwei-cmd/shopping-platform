@@ -27,9 +27,11 @@
         <div class="publish-info">
           <span class="dot" :class="{ on: publishedCount > 0 }"></span>
           <span>线上已发布 <b>{{ publishedCount }}</b> 件 · 本地共 <b>{{ products.length }}</b> 件</span>
+          <span class="publish-time" v-if="publishedAtText">线上更新于 {{ publishedAtText }}</span>
         </div>
         <div class="publish-actions">
           <button class="pub-btn primary" @click="publishNow">发布到线上</button>
+          <button class="pub-btn" @click="checkLive">检查是否生效</button>
           <button class="pub-btn" @click="copyJson">复制 JSON</button>
           <button class="pub-btn" @click="openEditor">GitHub 编辑页</button>
           <button class="pub-btn" @click="configToken">{{ hasToken ? '更换 Token' : '设置 Token' }}</button>
@@ -150,12 +152,19 @@
 import { ref, reactive, computed, onMounted } from "vue";
 import { confirmSafe } from "../utils/dialog";
 import { useRouter } from "vue-router";
-import { buildDoc, getToken, githubEditUrl, loadPublishedGoods, publishToRepo, setToken } from "../api/catalog";
+import { buildDoc, getToken, githubEditUrl, loadPublishedDoc, publishToRepo, setToken } from "../api/catalog";
+import { toast } from "../utils/toast";
 
 const router = useRouter();
 
 // 搜索关键词
 const publishedCount = ref(0);
+const publishedAt = ref("");
+const publishedAtText = computed(() => {
+  if (!publishedAt.value) return "";
+  const d = new Date(publishedAt.value);
+  return Number.isNaN(d.getTime()) ? "" : d.toLocaleString("zh-CN", { hour12: false });
+});
 const hasToken = ref(!!getToken());
 
 const searchKeyword = ref("");
@@ -212,13 +221,6 @@ function initForm() {
   formData.bannerImage = "";
 }
 
-// 打开添加商品模态框
-function openAddModal() {
-  initForm();
-  editingProduct.value = null;
-  showAddModal.value = true;
-}
-
 // 编辑商品
 function editProduct(product: typeof products.value[0]) {
   editingProduct.value = product;
@@ -245,7 +247,7 @@ function closeModal() {
 // 保存商品
 async function saveProduct() {
   if (!formData.name || formData.price <= 0 || formData.stock < 0) {
-    alert("请填写完整的商品信息");
+    toast.warning("请填写完整的商品信息");
     return;
   }
 
@@ -271,13 +273,13 @@ async function saveProduct() {
               ...formData
             };
           }
-          alert(data.message || "商品信息已更新");
+          toast.success(data.message || "商品信息已更新");
         } else {
-        alert(data.message || "更新失败");
+        toast.error(data.message || "更新失败");
       }
     } catch (error) {
       console.error("更新商品失败:", error);
-      alert("更新失败，请检查网络连接");
+      toast.error("更新失败，请检查网络连接");
     }
   } else {
     // 添加模式
@@ -293,13 +295,13 @@ async function saveProduct() {
       const data = await response.json();
       if (data.code === 200) {
         products.value.push(data.data);
-        alert(data.message || "商品添加成功");
+        toast.success(data.message || "商品添加成功");
       } else {
-        alert(data.message || "添加失败");
+        toast.error(data.message || "添加失败");
       }
     } catch (error) {
       console.error("添加商品失败:", error);
-      alert("添加失败，请检查网络连接");
+      toast.error("添加失败，请检查网络连接");
     }
   }
 
@@ -325,13 +327,13 @@ async function deleteProduct(id: number) {
       products.value = products.value.filter(p => p.id !== id);
       // 删除商品后，清除 localStorage 中的缓存，确保首页不会显示旧数据
       localStorage.removeItem("products");
-      alert(data.message || "商品已下架");
+      toast.success(data.message || "商品已下架");
     } else {
-      alert(data.message || "删除失败");
+      toast.error(data.message || "删除失败");
     }
   } catch (error) {
     console.error("删除商品失败:", error);
-    alert("删除失败，请检查网络连接");
+    toast.error("删除失败，请检查网络连接");
   }
 }
 
@@ -362,13 +364,45 @@ async function loadProducts() {
 // 页面挂载时验证管理员权限并加载商品数据
 // ---------------- 商品发布 ----------------
 async function refreshPublished() {
-  const list = await loadPublishedGoods();
-  publishedCount.value = Array.isArray(list) ? list.length : 0;
+  const doc = await loadPublishedDoc();
+  publishedCount.value = doc ? doc.items.length : 0;
+  publishedAt.value = doc?.updatedAt || "";
+}
+
+/** 轮询线上文件，确认这次发布是否已经生效 */
+async function waitUntilLive(expectedCount: number, previousUpdatedAt: string) {
+  const deadline = Date.now() + 150000;
+  while (Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, 6000));
+    const doc = await loadPublishedDoc();
+    if (!doc) continue;
+    if (doc.updatedAt && doc.updatedAt !== previousUpdatedAt && doc.items.length === expectedCount) {
+      publishedCount.value = doc.items.length;
+      publishedAt.value = doc.updatedAt;
+      toast.success("线上已更新，" + doc.items.length + " 件商品对所有访客可见了");
+      return;
+    }
+  }
+  toast.warning("还没检测到更新，可能仍在构建。稍后点「检查是否生效」再看看");
+}
+
+/** 手动检查一次 */
+async function checkLive() {
+  const doc = await loadPublishedDoc();
+  if (!doc) {
+    toast.error("读取线上商品目录失败");
+    return;
+  }
+  publishedCount.value = doc.items.length;
+  publishedAt.value = doc.updatedAt || "";
+  const same = doc.items.length === products.value.length;
+  if (same) toast.success("线上已是 " + doc.items.length + " 件商品，和本地一致");
+  else toast.warning("线上 " + doc.items.length + " 件 / 本地 " + products.value.length + " 件，可能还没提交或还在构建");
 }
 
 async function publishNow() {
   if (!products.value.length) {
-    alert("本地还没有商品，先在上面的「添加商品」里加几件吧");
+    toast.warning("本地还没有商品，先点「添加商品」加几件吧");
     return;
   }
   if (!hasToken.value) {
@@ -377,9 +411,15 @@ async function publishNow() {
   }
   if (!confirmSafe("把当前 " + products.value.length + " 件商品发布到线上？提交后约 1 分钟所有访客可见")) return;
 
+  const previousUpdatedAt = publishedAt.value;
   const result = await publishToRepo(products.value);
-  alert(result.message);
-  if (result.ok) await refreshPublished();
+  if (result.ok) {
+    toast.success(result.message);
+    await refreshPublished();
+    await waitUntilLive(products.value.length, previousUpdatedAt);
+  } else {
+    toast.error(result.message);
+  }
 }
 
 async function copyJson() {
@@ -389,13 +429,9 @@ async function copyJson() {
   try {
     await navigator.clipboard.writeText(text);
     if (editor) {
-      alert(
-        "已复制 " + products.value.length + " 件商品的 JSON。\n\n" +
-          "在刚打开的 GitHub 页面里：全选（Ctrl/Cmd + A）→ 粘贴 → Commit changes。\n" +
-          "提交后约 1 分钟 GitHub Pages 重建完成，所有访客都能看到。",
-      );
+      toast.success("已复制 " + products.value.length + " 件商品的 JSON，去 GitHub 页面粘贴并 Commit 即可");
     } else {
-      alert("已复制商品 JSON，但浏览器拦了新窗口。请手动点「GitHub 编辑页」再粘贴提交。");
+      toast.warning("已复制商品 JSON，但新窗口被拦截，请手动点「GitHub 编辑页」");
     }
   } catch {
     window.prompt("浏览器不允许自动复制，请手动复制下面内容，粘贴到 GitHub 的 products.json：", text);
@@ -414,7 +450,7 @@ function configToken() {
   if (value === null) return;
   setToken(value);
   hasToken.value = !!getToken();
-  alert(hasToken.value ? "Token 已保存，可以直接一键发布" : "已清除 Token，发布会走复制粘贴方式");
+  toast.success(hasToken.value ? "Token 已保存，以后可以一键发布" : "已清除 Token，发布会走复制粘贴方式");
 }
 
 onMounted(async () => {
@@ -572,6 +608,11 @@ onMounted(async () => {
 
 .publish-info b {
   color: #111827;
+}
+
+.publish-time {
+  font-size: 12px;
+  color: #9ca3af;
 }
 
 .publish-bar .dot {
