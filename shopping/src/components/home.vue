@@ -117,8 +117,8 @@
           <span>娱乐</span><span>/</span><span>图书</span><span>/</span><span>乐器</span><span>/</span><span>鲜花</span>
         </div>
         
-        <!-- 猜你喜欢区域 -->
-        <div class="guess-area">
+        <!-- 猜你喜欢区域（没有商品时整块隐藏） -->
+        <div class="guess-area" v-if="topCategoryProducts.length > 0">
           <span class="dot"></span>
           <span>猜你喜欢</span>
           <span class="sub-text">精选好物推荐</span>
@@ -185,7 +185,7 @@
           <div class="section-header">
             <h3 class="section-title">{{ activeCategory ? `分类：${activeCategory}` : '热门商品' }}</h3>
             <a href="#" class="more-link" v-if="activeCategory" @click.prevent="clearCategoryFilter">清除筛选 ×</a>
-            <a href="#" class="more-link" v-else>查看更多 ›</a>
+            <a href="#" class="more-link" v-else-if="displayedProducts.length > 0">查看更多 ›</a>
           </div>
           <div class="goods-grid">
             <div v-if="displayedProducts.length === 0" class="empty-tip">
