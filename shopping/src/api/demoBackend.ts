@@ -17,7 +17,7 @@
  * 关掉它，请求就会照常发到 http://localhost:8081。
  */
 
-import { isCloudEnabled, loadGoodsFromCloud, saveGoodsToCloud } from './cloudStore'
+import { loadPublishedGoods } from './catalog'
 
 const DB_KEY = 'shopping_demo_db_v3'
 const TOKEN_PREFIX = 'demo-token'
@@ -588,19 +588,18 @@ async function route(ctx: Ctx): Promise<ApiResult> {
 
   /* ------------------------------ 商品 ------------------------------ */
   if (resource === 'goods') {
-    // 云端同步开启时，商品以云端为唯一数据源；未配置/失败时退回本地
-    const pullCloud = async (): Promise<boolean> => {
-      if (!isCloudEnabled()) return false
-      const remote = await loadGoodsFromCloud()
-      if (remote === null) return false
-      db.goods = remote
+    // 线上目录（仓库里的 products.json）作为“已发布”的商品；
+    // 本浏览器里新增/修改的商品算草稿，合并展示，发布后才会出现在别人眼前。
+    const mergePublished = async (): Promise<void> => {
+      const published = await loadPublishedGoods()
+      if (!published) return
+      const localById = new Map(db.goods.map((item) => [Number(item.id), item]))
+      const merged: AnyRecord[] = published.map((item: AnyRecord) => localById.get(Number(item.id)) || item)
+      for (const item of db.goods) {
+        if (!published.some((p: AnyRecord) => Number(p.id) === Number(item.id))) merged.push(item)
+      }
+      db.goods = merged
       saveDb()
-      return true
-    }
-
-    const pushCloud = async (): Promise<boolean> => {
-      if (!isCloudEnabled()) return false
-      return saveGoodsToCloud(db.goods)
     }
 
     const nextGoodsId = (): number => {
@@ -608,13 +607,8 @@ async function route(ctx: Ctx): Promise<ApiResult> {
       return maxId + 1
     }
 
-    const cloudMessage = (synced: boolean, fallback: string): string => {
-      if (!isCloudEnabled()) return fallback
-      return synced ? `${fallback}（已同步到云端）` : `${fallback}，但云端同步失败`
-    }
-
     if (!second && method === 'GET') {
-      await pullCloud()
+      await mergePublished()
       const category = ctx.query.get('category') || ''
       const keyword = (ctx.query.get('keyword') || '').trim()
       let list = db.goods.slice()
@@ -634,7 +628,7 @@ async function route(ctx: Ctx): Promise<ApiResult> {
       if (!name) return fail('商品名称不能为空')
       if (price <= 0) return fail('商品价格必须为正数')
 
-      await pullCloud()
+      await mergePublished()
       const goods: AnyRecord = {
         id: nextGoodsId(),
         name,
@@ -650,13 +644,11 @@ async function route(ctx: Ctx): Promise<ApiResult> {
       }
       db.goods.push(goods)
       saveDb()
-
-      const synced = await pushCloud()
-      return ok(goods, cloudMessage(synced, '商品创建成功'))
+      return ok(goods, '商品已保存到本地，点「发布到线上」后所有访客可见')
     }
 
     if (second && method === 'GET') {
-      await pullCloud()
+      await mergePublished()
       const goods = db.goods.find((g) => g.id === toNumber(second))
       if (!goods) return fail('商品不存在')
       return ok(goods)
@@ -666,7 +658,7 @@ async function route(ctx: Ctx): Promise<ApiResult> {
       const admin = userIsAdmin(ctx, db)
       if (!admin) return fail('需要管理员权限', 403)
 
-      await pullCloud()
+      await mergePublished()
       const goods = db.goods.find((g) => g.id === toNumber(second))
       if (!goods) return fail('商品不存在')
       const body = ctx.body
@@ -679,25 +671,21 @@ async function route(ctx: Ctx): Promise<ApiResult> {
       if (body.status !== undefined) goods.status = body.status
       goods.updatedAt = localIso(new Date())
       saveDb()
-
-      const synced = await pushCloud()
-      return ok(goods, cloudMessage(synced, '商品更新成功'))
+      return ok(goods, '商品已更新到本地，点「发布到线上」后所有访客可见')
     }
 
     if (second && method === 'DELETE') {
       const admin = userIsAdmin(ctx, db)
       if (!admin) return fail('需要管理员权限', 403)
 
-      await pullCloud()
+      await mergePublished()
       const id = toNumber(second)
       if (!db.goods.some((g) => g.id === id)) return fail('商品不存在')
       db.goods = db.goods.filter((g) => g.id !== id)
       db.carts = db.carts.filter((c) => c.goodsId !== id)
       db.favorites = db.favorites.filter((f) => f.goodsId !== id)
       saveDb()
-
-      const synced = await pushCloud()
-      return ok(null, cloudMessage(synced, '商品已下架'))
+      return ok(null, '商品已删除，点「发布到线上」后所有访客同步')
     }
     return fail('接口不存在', 404)
   }

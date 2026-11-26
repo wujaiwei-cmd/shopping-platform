@@ -23,10 +23,17 @@
         <button v-if="searchKeyword" class="clear-btn" @click="searchKeyword = ''">×</button>
         <button class="add-btn" @click="showAddModal = true">添加商品</button>
       </div>
-      <div class="cloud-tip" :class="{ on: cloudEnabled }">
-        <span class="dot"></span>
-        <span v-if="cloudEnabled">云端同步已开启：这里上架的商品，所有访客都能看到</span>
-        <span v-else>本地演示模式：商品只保存在当前浏览器（配置云端后所有访客可见）</span>
+      <div class="publish-bar">
+        <div class="publish-info">
+          <span class="dot" :class="{ on: publishedCount > 0 }"></span>
+          <span>线上已发布 <b>{{ publishedCount }}</b> 件 · 本地共 <b>{{ products.length }}</b> 件</span>
+        </div>
+        <div class="publish-actions">
+          <button class="pub-btn primary" @click="publishNow">发布到线上</button>
+          <button class="pub-btn" @click="copyJson">复制 JSON</button>
+          <button class="pub-btn" @click="openEditor">GitHub 编辑页</button>
+          <button class="pub-btn" @click="configToken">{{ hasToken ? '更换 Token' : '设置 Token' }}</button>
+        </div>
       </div>
       <div class="section-title">商品列表</div>
       
@@ -124,12 +131,13 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
-import { ensureCloudConfig, isCloudEnabled } from "../api/cloudStore";
+import { buildDoc, getToken, githubEditUrl, loadPublishedGoods, publishToRepo, setToken } from "../api/catalog";
 
 const router = useRouter();
 
 // 搜索关键词
-const cloudEnabled = ref(false);
+const publishedCount = ref(0);
+const hasToken = ref(!!getToken());
 
 const searchKeyword = ref("");
 
@@ -327,9 +335,56 @@ async function loadProducts() {
   }
 
 // 页面挂载时验证管理员权限并加载商品数据
+// ---------------- 商品发布 ----------------
+async function refreshPublished() {
+  const list = await loadPublishedGoods();
+  publishedCount.value = Array.isArray(list) ? list.length : 0;
+}
+
+async function publishNow() {
+  if (!products.value.length) {
+    alert("本地还没有商品，先在上面的「添加商品」里加几件吧");
+    return;
+  }
+  if (!hasToken.value) {
+    alert("还没有设置 GitHub Token，改用「复制 JSON + GitHub 编辑页」的方式发布");
+    copyJson();
+    return;
+  }
+  if (!confirm("把当前 " + products.value.length + " 件商品发布到线上？提交后约 1 分钟所有访客可见")) return;
+
+  const result = await publishToRepo(products.value);
+  alert(result.message);
+  if (result.ok) await refreshPublished();
+}
+
+async function copyJson() {
+  const text = JSON.stringify(buildDoc(products.value), null, 2);
+  try {
+    await navigator.clipboard.writeText(text);
+    alert("已复制商品 JSON。点「GitHub 编辑页」把内容粘贴进去并提交即可。");
+  } catch {
+    window.prompt("复制下面的 JSON，粘贴到 GitHub 的 products.json：", text);
+  }
+}
+
+function openEditor() {
+  window.open(githubEditUrl(), "_blank");
+}
+
+function configToken() {
+  const value = prompt(
+    "粘贴 GitHub Token（fine-grained token，勾选 Contents: Read and write）\n只保存在你本机浏览器，不会写进代码；留空则清除：",
+    "",
+  );
+  if (value === null) return;
+  setToken(value);
+  hasToken.value = !!getToken();
+  alert(hasToken.value ? "Token 已保存，可以直接一键发布" : "已清除 Token，发布会走复制粘贴方式");
+}
+
 onMounted(async () => {
-  await ensureCloudConfig();
-  cloudEnabled.value = isCloudEnabled();
+  await refreshPublished();
   const isAdmin = localStorage.getItem("isAdmin") === "true";
   const token = localStorage.getItem("token");
   
@@ -460,31 +515,72 @@ onMounted(async () => {
   color: #333;
 }
 
-.cloud-tip {
+.publish-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 10px 0 6px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #f7f8fb;
+  border: 1px solid #e6e8f0;
+  font-size: 13px;
+  color: #4b5563;
+}
+
+.publish-info {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin: 10px 0 4px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  font-size: 13px;
-  color: #8a6d3b;
-  background: #fffaf0;
-  border: 1px solid #f5e3c3;
 }
 
-.cloud-tip.on {
-  color: #1f7a3f;
-  background: #f0fbf3;
-  border-color: #c8ebd3;
+.publish-info b {
+  color: #111827;
 }
 
-.cloud-tip .dot {
+.publish-bar .dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: currentColor;
+  background: #d1d5db;
   flex: 0 0 auto;
+}
+
+.publish-bar .dot.on {
+  background: #16a34a;
+}
+
+.publish-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pub-btn {
+  padding: 6px 12px;
+  border: 1px solid #d6d9e4;
+  background: #fff;
+  color: #374151;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pub-btn:hover {
+  border-color: #9aa3b8;
+}
+
+.pub-btn.primary {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+}
+
+.pub-btn.primary:hover {
+  background: #1d4ed8;
 }
 
 .add-btn {

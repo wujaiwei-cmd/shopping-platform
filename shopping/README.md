@@ -61,29 +61,35 @@ GitHub Pages 只能托管静态文件，跑不了 Spring Boot + MySQL。为了�
 > 填好名称 / 价格 / 库存 / 分类保存后，首页的「热门商品」「今日特惠」就会立刻出现这件商品，
 > 普通用户才能加购物车、下单、评价。
 
-### 商品云端共享（可选，让别人也能看到你上架的商品）
+### 发布商品（让别人也能看到）
 
-默认情况下商品只存在「当前浏览器」的 localStorage 里：你在自己电脑上架，别人打开看到的还是空店。
-如果希望**商家上架一次、所有访客都能看到**，把商品表放到一个免费的 JSON 存储服务上即可：
+商品目录就是一个文件：[`shopping/public/products.json`](public/products.json)。
+访客打开站点时直接读它，所以**只要文件里有商品，所有访客都能看到**。
 
-1. 打开 <https://getpantry.cloud/> ，点 **Create a Pantry**，填邮箱（不会发广告）+ 一个名字，提交
-2. 复制页面给出的 **Pantry ID**（一串 UUID）
-3. 编辑仓库里的 [`shopping/public/cloud.json`](public/cloud.json)，把 ID 填进去并提交：
+流程：
 
-   ```json
-   { "pantryId": "8f3c1a2b-4d5e-6a7b-8c9d-0e1f2a3b4c5d" }
-   ```
+1. 用 `admin / admin123` 登录 → **管理后台 → 商品管理 → 添加商品**（这一步只改当前浏览器里的“草稿”）
+2. 页面顶部点 **「发布到线上」**，二选一：
+   - **已经设置过 GitHub Token**：直接提交到仓库，Pages 约 1 分钟后自动重建；
+   - **没设置 Token**：会复制一份 JSON，并打开 GitHub 上的编辑页，粘贴 → 提交即可。
+3. 发布后，任何人打开链接都能看到这些商品，并能加购、下单。
 
-4. 等 Pages 自动重新部署（约 1 分钟）。之后「商品管理」页顶部会显示
-   **“云端同步已开启：这里上架的商品，所有访客都能看到”**，此时添加 / 编辑 / 删除商品都会写回云端。
+#### 想一键发布？（可选，2 分钟配置一次）
 
-说明：
+1. 打开 <https://github.com/settings/tokens?type=beta> 新建 **Fine-grained token**
+2. Repository access 选 **Only select repositories** → `shopping-platform`
+3. Permissions → Repository permissions → **Contents: Read and write**（其余留空）
+4. 生成后复制，回到站点的「商品管理」→ 点 **「设置 Token」**，粘贴保存
 
-- Pantry ID 不是密钥，只是一个“桶”的地址，会出现在前端代码里；它只暴露商品列表，
-  不涉及用户、订单等隐私数据；万一被清空，管理员重新上架即可恢复。
-- 云端不可用（断网、服务异常）时会自动退回本地模式，页面不会白屏。
-- 想换成 Supabase / 自己的接口？只要提供 `GET`（返回数组）和 `PUT`（覆盖数组）两个行为，
-  用 `VITE_CLOUD_ENDPOINT` 指过去即可。
+Token 只存在你本机浏览器的 localStorage 里，不会写进代码或仓库；
+它只对这个仓库的文件有写权限，随时可以在 GitHub 上撤销。
+
+#### 说明
+
+- 商品目录里只存商品（名称、价格、库存、分类、图片），不涉及用户、订单等隐私数据。
+- 本地草稿在发布前只对你自己可见；别人打开看到的始终是 `products.json` 里的内容。
+- 图片填 URL 即可（也可以用仓库里 `public/images/` 下的图片，例如
+  `/shopping-platform/images/ysfwj.jpg`）。
 
 ### 在线可以走通的流程
 
