@@ -106,6 +106,20 @@
             <label>商品图片URL</label>
             <input v-model="formData.image" type="text" placeholder="请输入图片URL" />
           </div>
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" v-model="formData.banner" />
+              <span>在首页轮播图展示这件商品</span>
+            </label>
+          </div>
+          <div class="form-group" v-if="formData.banner">
+            <label>轮播图图片链接（留空就用上面的商品图片）</label>
+            <input
+              v-model="formData.bannerImage"
+              type="text"
+              placeholder="https://... 或 /shopping-platform/images/xxx.jpg"
+            />
+          </div>
         </div>
         <div class="modal-footer">
           <button class="cancel-btn" @click="closeModal">取消</button>
@@ -180,7 +194,9 @@ const formData = reactive({
   stock: 0,
   category: "保健品",
   description: "",
-  image: ""
+  image: "",
+  banner: false,
+  bannerImage: ""
 });
 
 // 初始化表单
@@ -191,6 +207,8 @@ function initForm() {
   formData.category = "保健品";
   formData.description = "";
   formData.image = "";
+  formData.banner = false;
+  formData.bannerImage = "";
 }
 
 // 打开添加商品模态框
@@ -209,6 +227,8 @@ function editProduct(product: typeof products.value[0]) {
   formData.category = product.category;
   formData.description = product.description;
   formData.image = product.image;
+  formData.banner = !!(product as any).banner;
+  formData.bannerImage = (product as any).bannerImage || "";
   showAddModal.value = true;
 }
 
@@ -563,6 +583,21 @@ onMounted(async () => {
 
 .publish-bar .dot.on {
   background: #16a34a;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #374151;
+}
+
+.checkbox-label input {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
 }
 
 .publish-hint {

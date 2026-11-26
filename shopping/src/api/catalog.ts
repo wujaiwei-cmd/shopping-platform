@@ -107,6 +107,8 @@ export function buildDoc(items: any[]): ProductDoc {
       description: item.description || '',
       image: item.image || '',
       status: item.status || 'active',
+      banner: !!item.banner,
+      bannerImage: item.bannerImage || '',
       createdAt: item.createdAt || new Date().toISOString(),
     })),
   }

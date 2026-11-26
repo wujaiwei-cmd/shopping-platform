@@ -638,6 +638,8 @@ async function route(ctx: Ctx): Promise<ApiResult> {
         description: ctx.body.description || '',
         image: ctx.body.image || imageUrl('jpyw.jpg'),
         status: ctx.body.status || 'active',
+        banner: !!ctx.body.banner,
+        bannerImage: ctx.body.bannerImage || '',
         sales: 0,
         createdAt: localIso(new Date()),
         updatedAt: null,
@@ -669,6 +671,8 @@ async function route(ctx: Ctx): Promise<ApiResult> {
       if (body.description !== undefined) goods.description = body.description
       if (body.image !== undefined) goods.image = body.image
       if (body.status !== undefined) goods.status = body.status
+      if (body.banner !== undefined) goods.banner = !!body.banner
+      if (body.bannerImage !== undefined) goods.bannerImage = body.bannerImage || ''
       goods.updatedAt = localIso(new Date())
       saveDb()
       return ok(goods, '商品已更新到本地，点「发布到线上」后所有访客可见')

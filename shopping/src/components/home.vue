@@ -27,7 +27,6 @@
         <a href="#" @click.prevent="goCart" class="nav-link">购物车</a>
         <a href="#" @click.prevent="goFav" class="nav-link">收藏夹</a>
         <a href="#" @click.prevent="goHelp" class="nav-link">帮助中心</a>
-        <a href="#" @click.prevent="goAdmin" class="nav-link">管理后台</a>
       </nav>
     </header>
 
@@ -139,12 +138,18 @@
       <!-- 右侧主内容区 -->
       <main class="main-part">
         <!-- 轮播图和今日特惠 -->
-        <div class="banner-row">
+        <div class="banner-row" v-if="slides.length > 0 || sideItems.length > 0">
           <!-- 轮播图区域 -->
-          <div class="banner">
+          <div class="banner" v-if="slides.length > 0">
             <div class="carousel" @mouseenter="handleMouseEnter" @mouseleave="handleMouseLeave">
               <div class="carousel-track" :style="{ transform: `translateX(-${currentSlide * 100}%)` }">
-                <div class="carousel-slide" v-for="(slide, index) in slides" :key="index">
+                <div
+                  class="carousel-slide"
+                  v-for="(slide, index) in slides"
+                  :key="slide.id || index"
+                  :style="{ cursor: slide.product ? 'pointer' : 'default' }"
+                  @click="slide.product && showProductDetail(slide.product)"
+                >
                   <img :src="slide.image" :alt="slide.title" />
                   <div class="slide-caption">{{ slide.title }}</div>
                 </div>
@@ -188,9 +193,8 @@
                 「{{ activeCategory }}」分类下暂无商品，换个分类看看吧
               </template>
               <template v-else>
-                <p class="empty-title">店铺里还没有商品</p>
-                <p class="empty-sub">管理员登录后到「商品管理」添加，上架的商品会立刻显示在这里</p>
-                <button class="empty-action" @click="goAdmin">去添加商品</button>
+                <p class="empty-title">该店铺还未上架商品</p>
+                <p class="empty-sub">敬请期待，稍后再来看看吧</p>
               </template>
             </div>
             <div v-else class="product-card" v-for="product in displayedProducts" :key="product.id">
@@ -367,7 +371,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, watch } from "vue";
 import { useRouter } from "vue-router";
 
 const router = useRouter();
@@ -470,14 +474,18 @@ let topCategoryProducts = ref([]);
 // 静态资源路径：跟随部署基路径（支持部署在子目录，如 GitHub Pages）
 const asset = (path: string) => `${import.meta.env.BASE_URL.replace(/\/$/, "")}${path}`;
 
-// 轮播图：只做品牌氛围，不绑定具体商品（商品由商家在后台添加）
-const slides = ref([
-  { image: asset("/images/qnlss.webp"), title: "精选好物 · 产地直供" },
-  { image: asset("/images/ysfwj.jpg"), title: "每日新鲜 · 顺丰直达" },
-  { image: asset("/images/rxhsw.jpg"), title: "品质严选 · 假一赔十" },
-  { image: asset("/images/jpyw.jpg"), title: "礼盒包装 · 送礼体面" },
-  { image: asset("/images/jtgj.jpg"), title: "限时特惠 · 满减进行中" },
-]);
+// 轮播图：由管理员在「商品管理」里勾选「首页轮播」决定；
+// 没勾选时自动取前 5 件商品；一件商品都没有就不显示轮播。
+const slides = computed(() => {
+  const marked = products.value.filter((p: any) => p.banner);
+  const source = marked.length ? marked : products.value.slice(0, 5);
+  return source.map((p: any) => ({
+    id: p.id,
+    image: p.bannerImage || p.image,
+    title: p.bannerTitle || p.name,
+    product: p,
+  }));
+});
 
 // 侧边「今日特惠」：直接取商家上架的商品，没有商品就不显示这一栏
 const sideItems = computed(() =>
@@ -488,6 +496,11 @@ const sideItems = computed(() =>
     image: product.image,
   }))
 );
+
+// 商品变化后，把轮播索引收回到有效范围
+watch(slides, (list) => {
+  if (!list.length || currentSlide.value >= list.length) currentSlide.value = 0;
+});
 
 // 加载商品列表
 async function loadProducts() {
@@ -768,10 +781,6 @@ function goFav() {
 
 function goHelp() {
   router.push("/help");
-}
-
-function goAdmin() {
-  router.push("/admin/login");
 }
 
 // 加入购物车
