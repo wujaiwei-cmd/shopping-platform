@@ -2774,7 +2774,8 @@ function formatReviewDate(dateStr) {
   }
 
   .site-footer {
-    padding: 24px 16px 16px;
+    /* 底部有固定的 mobile-nav，留出高度避免盖住联系方式 */
+    padding: 24px 16px 96px;
     margin-top: 24px;
   }
 
