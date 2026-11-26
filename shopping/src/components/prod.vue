@@ -35,6 +35,10 @@
           <button class="pub-btn" @click="configToken">{{ hasToken ? '更换 Token' : '设置 Token' }}</button>
         </div>
       </div>
+      <div class="publish-hint" v-if="!hasToken">
+        没 Token 也能发布：点「发布到线上」→ 自动复制商品 JSON 并打开 GitHub 编辑页 →
+        全选粘贴后点 Commit，约 1 分钟后所有访客可见。
+      </div>
       <div class="section-title">商品列表</div>
       
       <div class="product-list">
@@ -347,7 +351,6 @@ async function publishNow() {
     return;
   }
   if (!hasToken.value) {
-    alert("还没有设置 GitHub Token，改用「复制 JSON + GitHub 编辑页」的方式发布");
     copyJson();
     return;
   }
@@ -360,11 +363,21 @@ async function publishNow() {
 
 async function copyJson() {
   const text = JSON.stringify(buildDoc(products.value), null, 2);
+  // 先在点击事件里同步打开编辑页，避免 await 之后被浏览器当成弹窗拦截
+  const editor = window.open(githubEditUrl(), "_blank");
   try {
     await navigator.clipboard.writeText(text);
-    alert("已复制商品 JSON。点「GitHub 编辑页」把内容粘贴进去并提交即可。");
+    if (editor) {
+      alert(
+        "已复制 " + products.value.length + " 件商品的 JSON。\n\n" +
+          "在刚打开的 GitHub 页面里：全选（Ctrl/Cmd + A）→ 粘贴 → Commit changes。\n" +
+          "提交后约 1 分钟 GitHub Pages 重建完成，所有访客都能看到。",
+      );
+    } else {
+      alert("已复制商品 JSON，但浏览器拦了新窗口。请手动点「GitHub 编辑页」再粘贴提交。");
+    }
   } catch {
-    window.prompt("复制下面的 JSON，粘贴到 GitHub 的 products.json：", text);
+    window.prompt("浏览器不允许自动复制，请手动复制下面内容，粘贴到 GitHub 的 products.json：", text);
   }
 }
 
@@ -550,6 +563,17 @@ onMounted(async () => {
 
 .publish-bar .dot.on {
   background: #16a34a;
+}
+
+.publish-hint {
+  margin: 2px 0 6px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #fff8ec;
+  border: 1px solid #f3e2c7;
+  color: #8a6d3b;
+  font-size: 12px;
+  line-height: 1.7;
 }
 
 .publish-actions {
