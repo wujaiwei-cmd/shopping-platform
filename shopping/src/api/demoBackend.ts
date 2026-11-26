@@ -17,6 +17,8 @@
  * 关掉它，请求就会照常发到 http://localhost:8081。
  */
 
+import { isCloudEnabled, loadGoodsFromCloud, saveGoodsToCloud } from './cloudStore'
+
 const DB_KEY = 'shopping_demo_db_v3'
 const TOKEN_PREFIX = 'demo-token'
 const BASE = import.meta.env.BASE_URL || '/'
@@ -517,7 +519,7 @@ function dashboard(db: DemoDb): ApiResult {
 /* 路由                                                                */
 /* ------------------------------------------------------------------ */
 
-function route(ctx: Ctx): ApiResult {
+async function route(ctx: Ctx): Promise<ApiResult> {
   const db = loadDb()
   const seg = ctx.segs.slice(1) // 去掉开头的 'api'
   const [resource, second, third] = seg
@@ -586,7 +588,33 @@ function route(ctx: Ctx): ApiResult {
 
   /* ------------------------------ 商品 ------------------------------ */
   if (resource === 'goods') {
+    // 云端同步开启时，商品以云端为唯一数据源；未配置/失败时退回本地
+    const pullCloud = async (): Promise<boolean> => {
+      if (!isCloudEnabled()) return false
+      const remote = await loadGoodsFromCloud()
+      if (remote === null) return false
+      db.goods = remote
+      saveDb()
+      return true
+    }
+
+    const pushCloud = async (): Promise<boolean> => {
+      if (!isCloudEnabled()) return false
+      return saveGoodsToCloud(db.goods)
+    }
+
+    const nextGoodsId = (): number => {
+      const maxId = db.goods.reduce((max, item) => Math.max(max, toNumber(item.id, 0)), 0)
+      return maxId + 1
+    }
+
+    const cloudMessage = (synced: boolean, fallback: string): string => {
+      if (!isCloudEnabled()) return fallback
+      return synced ? `${fallback}（已同步到云端）` : `${fallback}，但云端同步失败`
+    }
+
     if (!second && method === 'GET') {
+      await pullCloud()
       const category = ctx.query.get('category') || ''
       const keyword = (ctx.query.get('keyword') || '').trim()
       let list = db.goods.slice()
@@ -605,8 +633,10 @@ function route(ctx: Ctx): ApiResult {
       const price = toNumber(ctx.body.price)
       if (!name) return fail('商品名称不能为空')
       if (price <= 0) return fail('商品价格必须为正数')
+
+      await pullCloud()
       const goods: AnyRecord = {
-        id: nextId(db, 'goods'),
+        id: nextGoodsId(),
         name,
         price: Number(price.toFixed(2)),
         stock: toNumber(ctx.body.stock),
@@ -620,10 +650,13 @@ function route(ctx: Ctx): ApiResult {
       }
       db.goods.push(goods)
       saveDb()
-      return ok(goods, '商品创建成功')
+
+      const synced = await pushCloud()
+      return ok(goods, cloudMessage(synced, '商品创建成功'))
     }
 
     if (second && method === 'GET') {
+      await pullCloud()
       const goods = db.goods.find((g) => g.id === toNumber(second))
       if (!goods) return fail('商品不存在')
       return ok(goods)
@@ -632,6 +665,8 @@ function route(ctx: Ctx): ApiResult {
     if (second && method === 'PUT') {
       const admin = userIsAdmin(ctx, db)
       if (!admin) return fail('需要管理员权限', 403)
+
+      await pullCloud()
       const goods = db.goods.find((g) => g.id === toNumber(second))
       if (!goods) return fail('商品不存在')
       const body = ctx.body
@@ -644,19 +679,25 @@ function route(ctx: Ctx): ApiResult {
       if (body.status !== undefined) goods.status = body.status
       goods.updatedAt = localIso(new Date())
       saveDb()
-      return ok(goods, '商品更新成功')
+
+      const synced = await pushCloud()
+      return ok(goods, cloudMessage(synced, '商品更新成功'))
     }
 
     if (second && method === 'DELETE') {
       const admin = userIsAdmin(ctx, db)
       if (!admin) return fail('需要管理员权限', 403)
+
+      await pullCloud()
       const id = toNumber(second)
       if (!db.goods.some((g) => g.id === id)) return fail('商品不存在')
       db.goods = db.goods.filter((g) => g.id !== id)
       db.carts = db.carts.filter((c) => c.goodsId !== id)
       db.favorites = db.favorites.filter((f) => f.goodsId !== id)
       saveDb()
-      return ok(null, '商品已下架')
+
+      const synced = await pushCloud()
+      return ok(null, cloudMessage(synced, '商品已下架'))
     }
     return fail('接口不存在', 404)
   }
@@ -1246,14 +1287,14 @@ export function installDemoBackend(): void {
   w.__demoReset = resetDemoData
   w.__demoDb = () => loadDb()
 
-  w.fetch = (input: any, init?: any): Promise<Response> => {
+  w.fetch = async (input: any, init?: any): Promise<Response> => {
     const ctx = buildContext(input, init)
     if (!ctx) return nativeFetch(input, init)
     try {
-      return Promise.resolve(makeResponse(route(ctx)))
+      return makeResponse(await route(ctx))
     } catch (error) {
       console.error('[demo-backend] 处理请求失败:', error)
-      return Promise.resolve(makeResponse(fail('演示后端处理异常')))
+      return makeResponse(fail('演示后端处理异常'))
     }
   }
 

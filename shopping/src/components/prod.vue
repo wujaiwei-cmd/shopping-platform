@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="product-page">
     <header class="admin-header">
       <div class="header-left">
@@ -22,6 +22,11 @@
         <input type="text" class="search-input" placeholder="搜索商品名称、描述或分类" v-model="searchKeyword" />
         <button v-if="searchKeyword" class="clear-btn" @click="searchKeyword = ''">×</button>
         <button class="add-btn" @click="showAddModal = true">添加商品</button>
+      </div>
+      <div class="cloud-tip" :class="{ on: cloudEnabled }">
+        <span class="dot"></span>
+        <span v-if="cloudEnabled">云端同步已开启：这里上架的商品，所有访客都能看到</span>
+        <span v-else>本地演示模式：商品只保存在当前浏览器（配置云端后所有访客可见）</span>
       </div>
       <div class="section-title">商品列表</div>
       
@@ -119,10 +124,13 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
+import { ensureCloudConfig, isCloudEnabled } from "../api/cloudStore";
 
 const router = useRouter();
 
 // 搜索关键词
+const cloudEnabled = ref(false);
+
 const searchKeyword = ref("");
 
 // 商品列表（初始为空）
@@ -230,7 +238,7 @@ async function saveProduct() {
               ...formData
             };
           }
-          alert("商品信息已更新");
+          alert(data.message || "商品信息已更新");
         } else {
         alert(data.message || "更新失败");
       }
@@ -252,7 +260,7 @@ async function saveProduct() {
       const data = await response.json();
       if (data.code === 200) {
         products.value.push(data.data);
-        alert("商品添加成功");
+        alert(data.message || "商品添加成功");
       } else {
         alert(data.message || "添加失败");
       }
@@ -284,7 +292,7 @@ async function deleteProduct(id: number) {
       products.value = products.value.filter(p => p.id !== id);
       // 删除商品后，清除 localStorage 中的缓存，确保首页不会显示旧数据
       localStorage.removeItem("products");
-      alert("商品已删除");
+      alert(data.message || "商品已下架");
     } else {
       alert(data.message || "删除失败");
     }
@@ -319,7 +327,9 @@ async function loadProducts() {
   }
 
 // 页面挂载时验证管理员权限并加载商品数据
-onMounted(() => {
+onMounted(async () => {
+  await ensureCloudConfig();
+  cloudEnabled.value = isCloudEnabled();
   const isAdmin = localStorage.getItem("isAdmin") === "true";
   const token = localStorage.getItem("token");
   
@@ -448,6 +458,33 @@ onMounted(() => {
 
 .clear-btn:hover {
   color: #333;
+}
+
+.cloud-tip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 4px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #8a6d3b;
+  background: #fffaf0;
+  border: 1px solid #f5e3c3;
+}
+
+.cloud-tip.on {
+  color: #1f7a3f;
+  background: #f0fbf3;
+  border-color: #c8ebd3;
+}
+
+.cloud-tip .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: 0 0 auto;
 }
 
 .add-btn {
