@@ -17,7 +17,7 @@
       
       <!-- 中间：平台Logo -->
       <div class="center-part">
-        <h1>购物平台</h1>
+        <h1>{{ site.storeName }}</h1>
       </div>
       
       <!-- 右侧：导航链接 -->
@@ -29,6 +29,12 @@
         <a href="#" @click.prevent="goHelp" class="nav-link">帮助中心</a>
       </nav>
     </header>
+
+    <!-- 店铺公告（内容来自 public/site.json） -->
+    <div class="notice-bar" v-if="site.notice">
+      <span class="notice-icon">📢</span>
+      <span class="notice-text">{{ site.notice }}</span>
+    </div>
 
     <!-- 搜索框区域 -->
     <div class="search-box-wrap">
@@ -187,6 +193,21 @@
             <a href="#" class="more-link" v-if="activeCategory" @click.prevent="clearCategoryFilter">清除筛选 ×</a>
             <a href="#" class="more-link" v-else-if="displayedProducts.length > 0">查看更多 ›</a>
           </div>
+          <!-- 排序 / 筛选 -->
+          <div class="sort-bar" v-if="products.length > 0">
+            <div class="sort-tabs">
+              <span
+                v-for="option in sortOptions"
+                :key="option.value"
+                :class="['sort-tab', { active: sortBy === option.value }]"
+                @click="sortBy = option.value"
+              >{{ option.label }}</span>
+            </div>
+            <label class="stock-filter">
+              <input type="checkbox" v-model="onlyInStock" />
+              <span>仅看有货</span>
+            </label>
+          </div>
           <div class="goods-grid">
             <div v-if="displayedProducts.length === 0" class="empty-tip">
               <template v-if="activeCategory">
@@ -220,6 +241,60 @@
           </div>
         </div>
       </main>
+    </div>
+
+    <!-- 页脚：店铺信息 / 政策 / 客服 -->
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <div class="footer-brand">
+          <h3>{{ site.storeName }}</h3>
+          <p class="footer-slogan">{{ site.slogan }}</p>
+        </div>
+        <div class="footer-links">
+          <a href="#" @click.prevent="openPolicy('about', '关于我们')">关于我们</a>
+          <a href="#" @click.prevent="openPolicy('shipping', '配送与运费')">配送与运费</a>
+          <a href="#" @click.prevent="openPolicy('refund', '退换货政策')">退换货政策</a>
+          <a href="#" @click.prevent="openPolicy('privacy', '隐私政策')">隐私政策</a>
+        </div>
+        <div class="footer-contact">
+          <p v-if="site.service.wechat">客服微信：{{ site.service.wechat }}</p>
+          <p v-if="site.service.phone">客服电话：{{ site.service.phone }}</p>
+          <p v-if="site.service.hours">服务时间：{{ site.service.hours }}</p>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span>© {{ currentYear }} {{ site.storeName }}</span>
+        <span v-if="site.footer.icp">{{ site.footer.icp }}</span>
+      </div>
+    </footer>
+
+    <!-- 政策说明弹窗 -->
+    <div v-if="policy.open" class="policy-overlay" @click="closePolicy">
+      <div class="policy-card" @click.stop>
+        <div class="policy-head">
+          <h3>{{ policy.title }}</h3>
+          <span class="policy-close" @click="closePolicy">×</span>
+        </div>
+        <div class="policy-body">{{ policy.content }}</div>
+      </div>
+    </div>
+
+    <!-- 客服浮窗 -->
+    <div class="service-widget">
+      <div v-if="showService" class="service-panel">
+        <h4>联系客服</h4>
+        <p v-if="site.service.wechat">微信：{{ site.service.wechat }}</p>
+        <p v-if="site.service.phone">
+          电话：<a :href="'tel:' + site.service.phone">{{ site.service.phone }}</a>
+        </p>
+        <p v-if="site.service.email">
+          邮箱：<a :href="'mailto:' + site.service.email">{{ site.service.email }}</a>
+        </p>
+        <p v-if="site.service.hours" class="service-hours">{{ site.service.hours }}</p>
+      </div>
+      <button class="service-btn" :class="{ active: showService }" @click="showService = !showService">
+        {{ showService ? '关闭' : '客服' }}
+      </button>
     </div>
 
     <!-- 商品详情弹窗 -->
@@ -375,8 +450,37 @@ import { ref, onMounted, computed, watch } from "vue";
 import { confirmSafe } from "../utils/dialog";
 import { useRouter } from "vue-router";
 import { toast } from "../utils/toast";
+import { defaultSite, loadSite, type SiteConfig } from "../api/site";
 
 const router = useRouter();
+
+// 站点信息（店铺名 / 公告 / 客服 / 页脚政策），来自 public/site.json
+const site = ref<SiteConfig>(defaultSite);
+const currentYear = new Date().getFullYear();
+
+// 商品排序 / 筛选
+type SortKey = "default" | "price-asc" | "price-desc" | "newest";
+const sortBy = ref<SortKey>("default");
+const onlyInStock = ref(false);
+const sortOptions: Array<{ value: SortKey; label: string }> = [
+  { value: "default", label: "综合" },
+  { value: "price-asc", label: "价格 ↑" },
+  { value: "price-desc", label: "价格 ↓" },
+  { value: "newest", label: "最新上架" },
+];
+
+// 页脚政策弹窗
+const policy = ref({ open: false, title: "", content: "" });
+function openPolicy(key: "about" | "shipping" | "refund" | "privacy", title: string) {
+  const content = site.value.footer[key] || "暂无内容";
+  policy.value = { open: true, title, content };
+}
+function closePolicy() {
+  policy.value.open = false;
+}
+
+// 客服浮窗
+const showService = ref(false);
 
 // 用户相关
 let nowUser = ref("");
@@ -393,8 +497,23 @@ let products = ref([]);
 let activeCategory = ref("");
 
 const displayedProducts = computed(() => {
-  if (!activeCategory.value) return products.value;
-  return products.value.filter(product => product.category === activeCategory.value);
+  let list = products.value.slice();
+
+  if (activeCategory.value) {
+    list = list.filter((product) => product.category === activeCategory.value);
+  }
+  if (onlyInStock.value) {
+    list = list.filter((product) => Number(product.stock) > 0);
+  }
+  if (sortBy.value === "price-asc") {
+    list.sort((a, b) => Number(a.price) - Number(b.price));
+  } else if (sortBy.value === "price-desc") {
+    list.sort((a, b) => Number(b.price) - Number(a.price));
+  } else if (sortBy.value === "newest") {
+    list.sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
+  }
+
+  return list;
 });
 
 function filterByCategory(name: string) {
@@ -677,7 +796,11 @@ function handleMouseLeave() {
 }
 
 // 页面加载时执行
-onMounted(() => {
+onMounted(async () => {
+  // 站点信息（店铺名 / 公告 / 页脚政策），失败时用默认值
+  site.value = await loadSite();
+  document.title = `${site.value.storeName} · ${site.value.slogan}`;
+
   console.log("=== 首页加载 ===");
   console.log("localStorage内容:", {
     loginUser: localStorage.getItem("loginUser"),
@@ -2394,6 +2517,284 @@ function formatReviewDate(dateStr) {
   
   .side-bar {
     width: 160px;
+  }
+}
+
+/* ============ 店铺公告 / 排序 / 页脚 / 客服 ============ */
+.notice-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 1200px;
+  margin: 12px auto 0;
+  padding: 9px 16px;
+  background: #fff7ed;
+  border: 1px solid #ffe0c2;
+  border-radius: 8px;
+  color: #b45309;
+  font-size: 13px;
+}
+
+.notice-icon {
+  flex: 0 0 auto;
+}
+
+.notice-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sort-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 10px 14px;
+  flex-wrap: wrap;
+}
+
+.sort-tabs {
+  display: flex;
+  gap: 4px;
+}
+
+.sort-tab {
+  padding: 5px 12px;
+  border-radius: 14px;
+  font-size: 13px;
+  color: #666;
+  cursor: pointer;
+  background: #f5f5f5;
+  transition: all 0.2s;
+}
+
+.sort-tab:hover {
+  color: #ff4400;
+}
+
+.sort-tab.active {
+  background: #ff4400;
+  color: #fff;
+}
+
+.stock-filter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #666;
+  cursor: pointer;
+}
+
+.stock-filter input {
+  accent-color: #ff4400;
+  cursor: pointer;
+}
+
+.site-footer {
+  background: #2b2f36;
+  color: #b9bec7;
+  margin-top: 40px;
+  padding: 36px 20px 18px;
+}
+
+.footer-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  gap: 40px;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.footer-brand h3 {
+  color: #fff;
+  margin: 0 0 8px;
+  font-size: 18px;
+  letter-spacing: 1px;
+}
+
+.footer-slogan {
+  margin: 0;
+  font-size: 13px;
+  color: #9aa1ab;
+}
+
+.footer-links {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  font-size: 13px;
+}
+
+.footer-links a {
+  color: #b9bec7;
+  text-decoration: none;
+}
+
+.footer-links a:hover {
+  color: #ff7a45;
+}
+
+.footer-contact p {
+  margin: 0 0 6px;
+  font-size: 13px;
+}
+
+.footer-bottom {
+  max-width: 1200px;
+  margin: 24px auto 0;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+  color: #868d97;
+  flex-wrap: wrap;
+}
+
+.policy-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.policy-card {
+  width: 560px;
+  max-width: 100%;
+  max-height: 80vh;
+  background: #fff;
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.policy-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.policy-head h3 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.policy-close {
+  cursor: pointer;
+  font-size: 22px;
+  color: #999;
+  line-height: 1;
+}
+
+.policy-body {
+  padding: 18px 20px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  line-height: 1.8;
+  font-size: 14px;
+  color: #444;
+}
+
+.service-widget {
+  position: fixed;
+  right: 22px;
+  bottom: 90px;
+  z-index: 1500;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.service-btn {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  border: none;
+  background: linear-gradient(135deg, #ff6a28, #ff4400);
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(255, 68, 0, 0.35);
+}
+
+.service-btn.active {
+  background: #555;
+  box-shadow: none;
+}
+
+.service-panel {
+  width: 230px;
+  background: #fff;
+  border-radius: 12px;
+  padding: 14px 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  font-size: 13px;
+  color: #444;
+}
+
+.service-panel h4 {
+  margin: 0 0 10px;
+  font-size: 14px;
+}
+
+.service-panel p {
+  margin: 0 0 8px;
+}
+
+.service-panel a {
+  color: #ff4400;
+  text-decoration: none;
+}
+
+.service-hours {
+  color: #999;
+  font-size: 12px;
+}
+
+@media (max-width: 768px) {
+  .notice-bar {
+    margin: 10px 12px 0;
+    font-size: 12px;
+  }
+
+  .sort-bar {
+    padding: 0 4px 10px;
+  }
+
+  .site-footer {
+    padding: 24px 16px 16px;
+    margin-top: 24px;
+  }
+
+  .footer-inner {
+    gap: 20px;
+  }
+
+  .footer-links {
+    gap: 14px;
+  }
+
+  .service-widget {
+    right: 14px;
+    bottom: 84px;
+  }
+
+  .service-btn {
+    width: 48px;
+    height: 48px;
+    font-size: 13px;
   }
 }
 </style>

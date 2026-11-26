@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://wujaiwei-cmd.github.io/shopping-platform/sitemap.xml

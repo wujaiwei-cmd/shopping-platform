@@ -3,10 +3,36 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="%BASE_URL%favicon.svg" />
+    <link rel="manifest" href="%BASE_URL%site.webmanifest" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#2b2f36" />
-    <meta name="description" content="Vue 3 + Spring Boot 全栈网络购物平台：商品浏览、购物车、下单退款、个人中心与管理后台在线演示。" />
-    <title>购物平台 · Vue 3 + Spring Boot 全栈演示</title>
+    <meta name="description" content="喜乐严选 · 产地直供的地方特产与养生好物。支持在线下单、48 小时发货、7 天无理由退换。" />
+    <title>喜乐严选 · 产地直供好物</title>
+
+    <!-- 分享卡片 -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="喜乐严选" />
+    <meta property="og:title" content="喜乐严选 · 产地直供好物" />
+    <meta property="og:description" content="产地直供的地方特产与养生好物，支持在线下单、48 小时发货、7 天无理由退换。" />
+    <meta property="og:url" content="https://wujaiwei-cmd.github.io/shopping-platform/" />
+    <meta property="og:image" content="https://wujaiwei-cmd.github.io/shopping-platform/images/qnlss.webp" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <!-- 结构化数据：让搜索引擎知道这是一个店铺 -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Store",
+        "name": "喜乐严选",
+        "description": "产地直供的地方特产与养生好物",
+        "url": "https://wujaiwei-cmd.github.io/shopping-platform/",
+        "image": "https://wujaiwei-cmd.github.io/shopping-platform/images/qnlss.webp",
+        "priceRange": "¥79 - ¥2399",
+        "currenciesAccepted": "CNY",
+        "paymentAccepted": "微信支付, 支付宝"
+      }
+    </script>
+
     <style>
       /* 首屏骨架：JS 包还没下载完时先显示，挂载后会被 Vue 直接替换掉 */
       html, body { margin: 0; padding: 0; background: #f5f5f5; }

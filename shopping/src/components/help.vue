@@ -2,7 +2,7 @@
   <div class="help-page">
     <header class="header">
       <div class="header-center">
-        <h1>购物平台</h1>
+        <h1>{{ siteRef.storeName }}</h1>
       </div>
       <nav class="header-right">
         <a href="#" @click.prevent="goHome" class="nav-item">首页</a>
@@ -158,6 +158,7 @@
 
 <script setup lang="ts">
 import { useRouter } from "vue-router";
+import { siteRef } from "../api/site";
 import { ref } from "vue";
 
 const router = useRouter();

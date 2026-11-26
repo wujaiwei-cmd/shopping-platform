@@ -1,0 +1,19 @@
+{
+  "name": "喜乐严选 · 产地直供好物",
+  "short_name": "喜乐严选",
+  "description": "产地直供的地方特产与养生好物",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f5f5f5",
+  "theme_color": "#2b2f36",
+  "lang": "zh-CN",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
